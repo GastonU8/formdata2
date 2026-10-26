@@ -1,0 +1,44 @@
+{# Tarjeta de gráfico.
+
+   El SVG y la tabla van juntos siempre. El gráfico sirve para ver la forma de un
+   vistazo; la tabla es la que da el número exacto, la que se puede copiar y la
+   que lee un lector de pantalla. Ofrecer solo el gráfico obliga a estimar valores
+   mirando largos de barra, que es justo lo que un informe de laboratorio no puede
+   pedirle a nadie. #}
+
+{% macro tarjeta_grafico(serie, tipo='barras', ancho='') %}
+<div class="tarjeta grafico-tarjeta {{ ancho }}">
+  <div class="tarjeta__cabecera">
+    <h2>{{ serie.titulo }}</h2>
+    <span class="etiqueta">{{ serie.unidad }}</span>
+  </div>
+
+  {{ grafico[tipo](serie) }}
+
+  {% if serie.hay_datos %}
+    <details class="grafico-tabla">
+      <summary>Ver los valores</summary>
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th scope="col">{{ serie.titulo }}</th>
+            <th scope="col" class="num">Cantidad</th>
+            <th scope="col" class="num">%</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for p in serie.puntos %}
+          <tr>
+            <td>{% if p.enlace %}<a href="{{ p.enlace }}">{{ p.etiqueta }}</a>{% else %}{{ p.etiqueta }}{% endif %}</td>
+            <td class="num">{{ p.valor|numero }}</td>
+            <td class="num">{{ serie.proporcion(p) }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </details>
+  {% endif %}
+
+  {% if serie.nota %}<p class="nota">{{ serie.nota }}</p>{% endif %}
+</div>
+{% endmacro %}

@@ -1,0 +1,122 @@
+{% import "_grafico.html" as g with context %}
+<div id="indicadores">
+
+  <section class="rejilla rejilla--cuatro" style="margin-bottom:1rem">
+    <div class="tarjeta cifra">
+      <span class="etiqueta">Ensayos</span>
+      <span class="cifra__valor">{{ resumen.tratamientos|numero }}</span>
+      <span class="cifra__pie">{{ 'en el recorte elegido' if filtros.hay_alguno else 'en todo el repositorio' }}</span>
+    </div>
+    <div class="tarjeta cifra">
+      <span class="etiqueta">Clientes</span>
+      <span class="cifra__valor">{{ resumen.clientes|numero }}</span>
+      <span class="cifra__pie">distintos con ensayos</span>
+    </div>
+    <div class="tarjeta cifra">
+      <span class="etiqueta">Productos</span>
+      <span class="cifra__valor">{{ resumen.productos|numero }}</span>
+      <span class="cifra__pie">distintos usados en mezclas</span>
+    </div>
+    <div class="tarjeta cifra">
+      <span class="etiqueta">Normalización</span>
+      <span class="cifra__valor {{ '' if resumen.confiable else 'cifra__valor--aviso' }}">{{ resumen.porcentaje_normalizado }}%</span>
+      <span class="cifra__pie">
+        {% if resumen.filas_sin_mapear %}
+          {{ resumen.filas_sin_mapear|numero }} fila(s) sin resolver acá
+        {% else %}
+          de este recorte
+        {% endif %}
+      </span>
+    </div>
+  </section>
+
+  {% if not resumen.confiable and resumen.tratamientos %}
+    <div class="aviso aviso--aviso" role="status">
+      Este recorte tiene {{ resumen.filas_sin_mapear|numero }} fila(s) de producto sin resolver
+      contra el maestro, así que los rankings de producto de abajo los subestiman.
+      {% if puede('normalizar_productos') %}
+        <a href="{{ url_for('normalizacion.bandeja') }}">Resolvelos en la bandeja →</a>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if resumen.tratamientos %}
+
+    {{ g.tarjeta_grafico(periodo, 'columnas') }}
+
+    <div class="rejilla rejilla--dos">
+      {{ g.tarjeta_grafico(productos) }}
+      {{ g.tarjeta_grafico(cultivos) }}
+      {{ g.tarjeta_grafico(clientes) }}
+      {{ g.tarjeta_grafico(tipos) }}
+    </div>
+
+    <div class="tarjeta grafico-tarjeta">
+      <div class="tarjeta__cabecera">
+        <h2>{{ observaciones.titulo }}</h2>
+        <span class="etiqueta">Reparto sobre {{ observaciones.total|int|numero }} ensayos</span>
+      </div>
+      {{ grafico['apilada'](observaciones) }}
+      {% if observaciones.hay_datos %}
+        <ul class="leyenda">
+          {% for p in observaciones.puntos %}
+            <li class="leyenda__item">
+              <span class="leyenda__marca leyenda__marca--{{ loop.index0 % 5 }}" aria-hidden="true"></span>
+              {% if p.enlace %}<a href="{{ p.enlace }}">{{ p.etiqueta }}</a>{% else %}{{ p.etiqueta }}{% endif %}
+              <b class="dato">{{ p.valor|numero }}</b>
+              <small>{{ observaciones.proporcion(p) }}%</small>
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+      <p class="nota">{{ observaciones.nota }}</p>
+    </div>
+
+    <div class="rejilla rejilla--dos">
+      {{ g.tarjeta_grafico(ph) }}
+
+      <div class="tarjeta">
+        <div class="tarjeta__cabecera">
+          <h2>Promedios de laboratorio</h2>
+          <span class="etiqueta">Con su n</span>
+        </div>
+        <table class="tabla">
+          <tbody>
+            <tr>
+              <td>pH del agua</td>
+              <td class="num dato">{{ promedios.ph_agua if promedios.ph_agua is not none else '—' }}</td>
+              <td class="num"><small>n={{ promedios.medidos_ph_agua|numero }}</small></td>
+            </tr>
+            <tr>
+              <td>pH de la mezcla</td>
+              <td class="num dato">{{ promedios.ph_mezcla if promedios.ph_mezcla is not none else '—' }}</td>
+              <td class="num"><small>n={{ promedios.medidos_ph_mezcla|numero }}</small></td>
+            </tr>
+            <tr>
+              <td>Dureza del agua</td>
+              <td class="num dato">{{ promedios.dureza_agua if promedios.dureza_agua is not none else '—' }}</td>
+              <td class="num"><small>n={{ promedios.medidos_dureza|numero }}</small></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="nota">
+          El <em>n</em> va al lado de cada promedio a propósito: un pH promedio sobre tres
+          ensayos no significa lo mismo que uno sobre trescientos.
+        </p>
+      </div>
+    </div>
+
+  {% else %}
+    <section class="tarjeta">
+      <div class="vacio">
+        {% if filtros.hay_alguno %}
+          <strong>Ningún ensayo cumple estos criterios</strong>
+          Sacá algún filtro y volvé a probar.
+        {% else %}
+          <strong>Todavía no hay ensayos cargados</strong>
+          Importá el Excel histórico para que el tablero empiece a mostrar algo.
+        {% endif %}
+      </div>
+    </section>
+  {% endif %}
+</div>

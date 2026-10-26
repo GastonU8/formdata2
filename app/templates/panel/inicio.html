@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block titulo %}Tablero{% endblock %}
+
+{% block contenido %}
+<header class="encabezado encabezado--ficha">
+  <div>
+    <span class="etiqueta">Tablero</span>
+    <h1>Estado del repositorio de mezclas</h1>
+    <p>Todo lo que se consulte más abajo vale lo que valga la normalización. Empezá por acá.</p>
+  </div>
+  {% if puede('exportar_reportes') %}
+    <div class="acciones-horizontales">
+      <a class="boton boton--suave" href="{{ url_for('panel.exportar_excel', **argumentos) }}">Exportar a Excel</a>
+      <a class="boton boton--suave" href="{{ url_for('panel.exportar_pdf', **argumentos) }}">Informe en PDF</a>
+    </div>
+  {% endif %}
+</header>
+
+<section class="tarjeta" style="margin-bottom:1rem">
+  <div class="probeta">
+    <div class="probeta__tubo" role="img"
+         aria-label="Normalización al {{ salud.porcentaje_resuelto }} por ciento">
+      <div class="probeta__liquido" style="height: {{ salud.porcentaje_resuelto }}%"></div>
+      <div class="probeta__marcas" aria-hidden="true"></div>
+      <div class="probeta__lectura">{{ salud.porcentaje_resuelto }}%</div>
+    </div>
+
+    <div class="probeta__lado">
+      <div>
+        <span class="etiqueta">Normalización de productos</span>
+        <div class="probeta__titular">
+          {% if salud.total == 0 %}
+            Todavía no hay datos cargados
+          {% elif salud.confiable %}
+            Los indicadores son confiables
+          {% else %}
+            Faltan resolver {{ salud.pendientes|numero }} nombres
+          {% endif %}
+        </div>
+      </div>
+
+      <p class="probeta__nota">
+        {% if salud.total == 0 %}
+          Importá el Excel histórico de tratamientos para que el tablero empiece a mostrar algo.
+        {% elif salud.confiable %}
+          Casi todos los nombres escritos en el Excel resolvieron contra un producto del maestro.
+        {% else %}
+          Cada nombre sin resolver es un tratamiento que no aparece cuando alguien busca por
+          activo o categoría.
+          {% if puede('normalizar_productos') %}
+            <a href="{{ url_for('normalizacion.bandeja') }}">Resolvelos en la bandeja de normalización →</a>
+          {% else %}
+            Pedile al área técnica que los resuelva antes de sacar conclusiones del tablero.
+          {% endif %}
+        {% endif %}
+      </p>
+
+      <div class="reparto">
+        <div>
+          <b>{{ salud.resueltos|numero }}</b>
+          <span>resueltos</span>
+        </div>
+        <div class="pendiente">
+          <b>{% if salud.pendientes %}<a href="{{ url_for('normalizacion.bandeja') if puede('normalizar_productos') else url_for('tratamientos.buscar', sin_mapear=1) }}">{{ salud.pendientes|numero }}</a>{% else %}0{% endif %}</b>
+          <span>pendientes de mapeo</span>
+        </div>
+        <div>
+          <b>{{ salud.total|numero }}</b>
+          <span>productos en mezclas</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<form class="filtros" id="filtros-tablero"
+      hx-get="{{ url_for('panel.inicio') }}"
+      hx-target="#indicadores" hx-select="#indicadores" hx-swap="outerHTML"
+      hx-trigger="submit, change from:select, change from:input[type=date], keyup changed delay:400ms from:input[type=search]"
+      hx-push-url="true" hx-indicator="#cargando">
+
+  <div class="filtros__fila">
+    <div class="campo campo--ancho">
+      <label for="producto">Producto o activo</label>
+      <input type="search" id="producto" name="producto" value="{{ filtros.producto_texto }}"
+             placeholder="Glifosato, Round Up, Herbicida…" autocomplete="off">
+    </div>
+    <div class="campo">
+      <label for="cultivo">Cultivo</label>
+      <select id="cultivo" name="cultivo">
+        <option value="">Todos</option>
+        {% for c in opciones.cultivos %}
+          <option value="{{ c }}" {% if filtros.cultivo == c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="campo">
+      <label for="tipo">Tipo de ensayo</label>
+      <select id="tipo" name="tipo">
+        <option value="">Todos</option>
+        {% for t in opciones.tipos %}
+          <option value="{{ t }}" {% if filtros.tipo_tratamiento == t %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="campo">
+      <label for="cliente">Cliente</label>
+      <select id="cliente" name="cliente">
+        <option value="">Todos</option>
+        {% for c in opciones.clientes %}
+          <option value="{{ c.id }}" {% if filtros.cliente_id == c.id %}selected{% endif %}>{{ c.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div class="filtros__fila filtros__fila--pie">
+    <div class="campo">
+      <label for="desde">Desde</label>
+      <input type="date" id="desde" name="desde" value="{{ filtros.desde.isoformat() if filtros.desde }}">
+    </div>
+    <div class="campo">
+      <label for="hasta">Hasta</label>
+      <input type="date" id="hasta" name="hasta" value="{{ filtros.hasta.isoformat() if filtros.hasta }}">
+    </div>
+    <div class="filtros__acciones">
+      <span id="cargando" class="cargando" aria-hidden="true">Calculando…</span>
+      {% if filtros.hay_alguno %}
+        <a class="enlace-accion" href="{{ url_for('panel.inicio') }}">Limpiar filtros</a>
+      {% endif %}
+      <noscript><button class="boton" type="submit">Aplicar</button></noscript>
+    </div>
+  </div>
+
+  {% if filtros.hay_alguno %}
+    <p class="nota">
+      Mostrando <strong>{{ filtros.descripcion()|join(', ') }}</strong>. Todos los indicadores,
+      y lo que se exporte, salen de este mismo recorte.
+    </p>
+  {% endif %}
+</form>
+
+{% include "panel/_indicadores.html" %}
+
+<section class="tarjeta">
+  <div class="tarjeta__cabecera">
+    <h2>Últimas importaciones</h2>
+    <span class="etiqueta">Trazabilidad de carga</span>
+  </div>
+  {% if importaciones %}
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th scope="col">Archivo</th><th scope="col">Cargó</th><th scope="col">Fecha</th>
+          <th scope="col" class="num">Filas OK</th><th scope="col" class="num">Con error</th>
+          <th scope="col">Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for a in importaciones %}
+        <tr>
+          <td>{{ a.nombre_archivo }}<small class="dato">{{ a.hash_sha256[:12] }}</small></td>
+          <td>{{ a.usuario.nombre }}</td>
+          <td class="dato">{{ a.creado_en|fecha_hora }}</td>
+          <td class="num">{{ a.filas_ok|numero }}</td>
+          <td class="num">{{ a.filas_con_error|numero }}</td>
+          <td>
+            <span class="estado estado--{{ 'ok' if a.estado.value == 'finalizado' else ('error' if a.estado.value == 'invalido' else 'pendiente') }}">
+              {{ a.estado.value.replace('_', ' ') }}
+            </span>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="vacio">
+      <strong>No se importó ningún archivo todavía</strong>
+      La carga de Excel se habilita en la etapa 2.
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

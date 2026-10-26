@@ -1,0 +1,51 @@
+# Despliegue de una sola máquina: la aplicación y su base.
+#
+# Dos servicios y nada más. No hay balanceador ni caché porque no hay carga que
+# los justifique: son piezas que hay que mantener y que alguien tiene que
+# entender el día que fallen.
+
+services:
+  base:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-formdata}
+      POSTGRES_USER: ${POSTGRES_USER:-formdata}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?definí POSTGRES_PASSWORD en el .env}
+    volumes:
+      # Volumen con nombre: los datos sobreviven a `docker compose down`. Sin esto,
+      # bajar los contenedores para actualizar borraría la base entera.
+      - datos_postgres:/var/lib/postgresql/data
+    healthcheck:
+      # La aplicación arranca más rápido que PostgreSQL. Sin este chequeo, el primer
+      # arranque falla con un error de conexión que parece un problema de la app.
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-formdata} -d ${POSTGRES_DB:-formdata}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    # La base no publica puertos al exterior: solo la alcanza la aplicación por la
+    # red interna de Compose. Para conectarse con un cliente, se abre un túnel.
+
+  aplicacion:
+    build: .
+    environment:
+      FORMDATA_ENTORNO: produccion
+      FORMDATA_SECRET_KEY: ${FORMDATA_SECRET_KEY:?definí FORMDATA_SECRET_KEY en el .env}
+      FORMDATA_DATABASE_URI: postgresql+psycopg://${POSTGRES_USER:-formdata}:${POSTGRES_PASSWORD}@base:5432/${POSTGRES_DB:-formdata}
+      FORMDATA_IA_PROVEEDOR: ${FORMDATA_IA_PROVEEDOR:-}
+      FORMDATA_IA_MODELO: ${FORMDATA_IA_MODELO:-}
+      FORMDATA_IA_API_KEY: ${FORMDATA_IA_API_KEY:-}
+    volumes:
+      # Los Excel importados se guardan para poder rehacer una importación y para
+      # que quede la evidencia de qué archivo produjo qué datos.
+      - archivos_importados:/app/var/importaciones
+    ports:
+      - "${PUERTO:-8000}:8000"
+    depends_on:
+      base:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  datos_postgres:
+  archivos_importados:

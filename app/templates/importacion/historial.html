@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block titulo %}Importar Excel{% endblock %}
+
+{% block contenido %}
+<header class="encabezado">
+  <span class="etiqueta">Carga de datos</span>
+  <h1>Importar histórico de tratamientos</h1>
+  <p>Se lee la planilla tal como se usa hoy. Los tratamientos que ya existen se actualizan; no se duplican.</p>
+</header>
+
+<section class="tarjeta zona-carga" style="margin-bottom:1rem">
+  <form method="post" enctype="multipart/form-data" action="{{ url_for('importacion.cargar') }}">
+    {{ formulario.hidden_tag() }}
+    <div class="zona-carga__cuerpo">
+      <div>
+        <h2>Elegí el archivo</h2>
+        <p class="nota">Formatos .xlsx o .xlsm, hasta 25 MB. Debe tener la hoja «Tratamientos».</p>
+        {{ formulario.archivo(class="campo-archivo", accept=".xlsx,.xlsm") }}
+        {% for e in formulario.archivo.errors %}<span class="campo__error">{{ e }}</span>{% endfor %}
+      </div>
+      <button class="boton" type="submit">Importar</button>
+    </div>
+  </form>
+
+  <ul class="lista-reglas">
+    <li><span class="dato">1</span> Se lee la hoja <b>Productos Normalizados</b> para el desglose de cada mezcla. Si un tratamiento no está ahí, se parte la columna <b>Tratamiento</b> por el signo «+».</li>
+    <li><span class="dato">2</span> Los nombres de producto se resuelven contra <b>Mapeo_Productos</b> y el maestro. Las columnas <b>Producto_Final</b> e <b>Id_Producto</b> del archivo se ignoran.</li>
+    <li><span class="dato">3</span> Las filas sin N° de tratamiento se descartan sin dar error.</li>
+  </ul>
+</section>
+
+<section class="tarjeta">
+  <div class="tarjeta__cabecera">
+    <h2>Importaciones anteriores</h2>
+    <span class="etiqueta">Últimas 25</span>
+  </div>
+  {% if archivos %}
+    <div class="tabla-envoltorio">
+      <table class="tabla">
+        <thead>
+          <tr><th scope="col">Archivo</th><th scope="col">Cargó</th><th scope="col">Fecha</th>
+              <th scope="col" class="num">Leídas</th><th scope="col" class="num">OK</th>
+              <th scope="col" class="num">Errores</th><th scope="col">Estado</th></tr>
+        </thead>
+        <tbody>
+        {% for a in archivos %}
+          <tr>
+            <td><a href="{{ url_for('importacion.detalle', archivo_id=a.id) }}">{{ a.nombre_archivo }}</a>
+                <small class="dato">{{ a.hash_sha256[:12] }}</small></td>
+            <td>{{ a.usuario.nombre }}</td>
+            <td class="dato">{{ a.creado_en|fecha_hora }}</td>
+            <td class="num">{{ a.filas_leidas|numero }}</td>
+            <td class="num">{{ a.filas_ok|numero }}</td>
+            <td class="num">{{ a.filas_con_error|numero }}</td>
+            <td>{% include "importacion/_insignia.html" %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="vacio">
+      <strong>Todavía no se importó ningún archivo</strong>
+      Subí la planilla histórica para poblar el sistema.
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,4 @@
+{% set e = a.estado.value if a is defined else archivo.estado.value %}
+<span class="estado estado--{{ 'ok' if e == 'finalizado' else ('error' if e == 'invalido' else ('pendiente' if e != 'finalizado_con_errores' else 'pendiente')) }}">
+  {{ e.replace('_', ' ') }}
+</span>

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block titulo %}Importación de {{ archivo.nombre_archivo }}{% endblock %}
+
+{% block contenido %}
+<nav class="miga">
+  <a href="{{ url_for('importacion.historial') }}">Importaciones</a>
+  <span aria-hidden="true">/</span><span>{{ archivo.nombre_archivo }}</span>
+</nav>
+
+<header class="encabezado">
+  <span class="etiqueta">Resultado de importación</span>
+  <h1>{{ archivo.nombre_archivo }}</h1>
+  <p>Cargado por {{ archivo.usuario.nombre }} el {{ archivo.creado_en|fecha_hora }}.</p>
+</header>
+
+{% include "importacion/_estado.html" %}
+{% endblock %}

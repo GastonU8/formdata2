@@ -1,0 +1,76 @@
+{% set en_curso = archivo.estado.value in ('pendiente', 'validando', 'procesando') %}
+<div id="estado-importacion"
+     {% if en_curso %}
+       hx-get="{{ url_for('importacion.detalle', archivo_id=archivo.id) }}"
+       hx-trigger="load delay:1500ms"
+       hx-target="#estado-importacion"
+       hx-swap="outerHTML"
+     {% endif %}>
+
+  <section class="tarjeta" style="margin-bottom:1rem">
+    <div class="tarjeta__cabecera">
+      <h2>
+        {% if en_curso %}Procesando…
+        {% elif archivo.estado.value == 'invalido' %}El archivo no se pudo procesar
+        {% elif archivo.estado.value == 'finalizado_con_errores' %}Importado con observaciones
+        {% else %}Importación completa{% endif %}
+      </h2>
+      {% set a = archivo %}{% include "importacion/_insignia.html" %}
+    </div>
+
+    {% if en_curso %}
+      <p class="nota">Podés cerrar esta pantalla: el proceso sigue corriendo y el resultado queda registrado.</p>
+      <div class="barra barra--animada"><i style="width:100%"></i></div>
+    {% else %}
+      <div class="rejilla rejilla--cuatro">
+        {% for etiqueta, valor, pie in [
+            ('Filas leídas', archivo.filas_leidas, 'con N° de tratamiento'),
+            ('Cargadas', archivo.filas_ok, 'tratamientos en la base'),
+            ('Con error', archivo.filas_con_error, 'no se pudieron cargar'),
+            ('Tamaño', (archivo.tamano_bytes / 1048576)|round(2), 'MB')
+        ] %}
+          <div class="cifra">
+            <span class="etiqueta">{{ etiqueta }}</span>
+            <span class="cifra__valor">{{ valor }}</span>
+            <span class="cifra__pie">{{ pie }}</span>
+          </div>
+        {% endfor %}
+      </div>
+      {% if archivo.observaciones %}<p class="nota" style="margin-top:1rem">{{ archivo.observaciones }}</p>{% endif %}
+    {% endif %}
+  </section>
+
+  {% if archivo.detalle_errores %}
+    <section class="tarjeta" style="margin-bottom:1rem">
+      <div class="tarjeta__cabecera">
+        <h2>Qué revisar en la planilla</h2>
+        <span class="etiqueta">{{ archivo.detalle_errores|length }} observacion{{ 'es' if archivo.detalle_errores|length != 1 else '' }}</span>
+      </div>
+      <div class="tabla-envoltorio">
+        <table class="tabla">
+          <thead><tr><th scope="col" class="num">Fila</th><th scope="col">Columna</th><th scope="col">Detalle</th></tr></thead>
+          <tbody>
+          {% for e in archivo.detalle_errores %}
+            <tr>
+              <td class="num dato">{{ e.fila or '—' }}</td>
+              <td>{{ e.columna }}</td>
+              <td>{{ e.mensaje }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+
+  {% if not en_curso and archivo.filas_ok %}
+    <section class="tarjeta">
+      <div class="tarjeta__cabecera"><h2>Qué sigue</h2></div>
+      <div class="acciones-horizontales">
+        <a class="boton" href="{{ url_for('tratamientos.buscar') }}">Ver los tratamientos</a>
+        <a class="boton boton--suave" href="{{ url_for('tratamientos.buscar', sin_mapear=1) }}">Revisar productos sin mapear</a>
+        <a class="boton boton--suave" href="{{ url_for('panel.inicio') }}">Ir al tablero</a>
+      </div>
+    </section>
+  {% endif %}
+</div>

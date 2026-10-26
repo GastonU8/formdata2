@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}{{ nombre_sistema }}{% endblock %} · {{ nombre_sistema }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  {# htmx se sirve desde la propia aplicación y no desde una CDN. Tres razones:
+     el laboratorio puede estar sin internet o detrás de un proxy y sin htmx se
+     caen todos los filtros; un script de terceros cargado en una aplicación con
+     datos comerciales de clientes es una dependencia de cadena de suministro que
+     no hace falta asumir; y la versión queda congelada en el repositorio. #}
+  <script src="{{ url_for('static', filename='js/htmx-2.0.2.min.js') }}" defer></script>
+</head>
+<body>
+<a class="saltar" href="#contenido">Saltar al contenido</a>
+
+<div class="marco">
+  <aside class="rail">
+    <div class="rail__marca">
+      <div class="rail__nombre">Form<span>Data</span></div>
+      <div class="rail__bajada">{{ descripcion_sistema }}</div>
+    </div>
+
+    <div class="rail__grupo"><span class="etiqueta">Circuito</span></div>
+    <nav aria-label="Circuito">
+      <a class="rail__enlace" href="{{ url_for('solicitudes.bandeja') }}"
+         {% if request.blueprint == 'solicitudes' %}aria-current="page"{% endif %}>Solicitudes</a>
+      {% if puede('registrar_solicitud') %}
+        <a class="rail__enlace" href="{{ url_for('solicitudes.nueva') }}">Nueva solicitud</a>
+      {% endif %}
+    </nav>
+
+    <div class="rail__grupo"><span class="etiqueta">Consulta</span></div>
+    <nav aria-label="Consulta">
+      <a class="rail__enlace" href="{{ url_for('panel.inicio') }}"
+         {% if request.endpoint == 'panel.inicio' %}aria-current="page"{% endif %}>Tablero</a>
+      <a class="rail__enlace" href="{{ url_for('tratamientos.buscar') }}"
+         {% if request.blueprint == 'tratamientos' %}aria-current="page"{% endif %}>Tratamientos</a>
+      <a class="rail__enlace" href="{{ url_for('productos.listar') }}"
+         {% if request.blueprint == 'productos' %}aria-current="page"{% endif %}>Productos</a>
+      <a class="rail__enlace" href="{{ url_for('asistente.inicio') }}"
+           {% if request.blueprint == 'asistente' %}aria-current="page"{% endif %}>Asistente</a>
+    </nav>
+
+    {% if puede('importar_excel') %}
+      <div class="rail__grupo"><span class="etiqueta">Carga de datos</span></div>
+      <nav aria-label="Carga de datos">
+        <a class="rail__enlace" href="{{ url_for('importacion.historial') }}"
+           {% if request.blueprint == 'importacion' %}aria-current="page"{% endif %}>Importar Excel</a>
+        <a class="rail__enlace" href="{{ url_for('normalizacion.bandeja') }}"
+           {% if request.blueprint == 'normalizacion' %}aria-current="page"{% endif %}>Sin mapear
+          {% set faltan = pendientes_sin_mapear() %}
+          {% if faltan %}<em class="rail__conteo dato">{{ faltan }}</em>{% endif %}
+        </a>
+      </nav>
+    {% endif %}
+
+    {# Cada enlace se condiciona a SU capacidad, no todo el bloque a una sola. Con
+       roles editables puede existir un «Auditor» que solo tenga `ver_auditoria`: si
+       el bloque entero dependiera de `gestionar_usuarios`, ese rol nunca vería el
+       enlace a la pantalla que sí puede abrir. #}
+    {% if puede('gestionar_roles') or puede('gestionar_usuarios') or puede('ver_auditoria') %}
+      <div class="rail__grupo"><span class="etiqueta">Administración</span></div>
+      <nav aria-label="Administración">
+        {% if puede('gestionar_roles') %}
+          <a class="rail__enlace" href="{{ url_for('admin.listar_roles') }}"
+             {% if request.endpoint and 'rol' in request.endpoint %}aria-current="page"{% endif %}>Roles</a>
+        {% endif %}
+        {% if puede('gestionar_usuarios') %}
+          <a class="rail__enlace" href="{{ url_for('admin.listar_usuarios') }}"
+             {% if request.endpoint and 'usuario' in request.endpoint %}aria-current="page"{% endif %}>Usuarios</a>
+        {% endif %}
+        {% if puede('ver_auditoria') %}
+          <a class="rail__enlace" href="{{ url_for('admin.bitacora') }}"
+             {% if request.endpoint == 'admin.bitacora' %}aria-current="page"{% endif %}>Auditoría</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+
+    <div class="rail__pie">
+      <div class="rail__usuario">
+        <div class="rail__inicial" aria-hidden="true">{{ current_user.iniciales }}</div>
+        <div>
+          <strong>{{ current_user.nombre }}</strong>
+          <small>{{ current_user.rol.etiqueta }}</small>
+        </div>
+      </div>
+      <form method="post" action="{{ url_for('auth.logout') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="rail__salir" type="submit">Cerrar sesión</button>
+      </form>
+    </div>
+  </aside>
+
+  <main class="lienzo" id="contenido">
+    {% with mensajes = get_flashed_messages(with_categories=true) %}
+      {% if mensajes %}
+        <div class="avisos" role="status">
+          {% for categoria, texto in mensajes %}
+            <div class="aviso aviso--{{ categoria }}">{{ texto }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block contenido %}{% endblock %}
+  </main>
+</div>
+</body>
+</html>

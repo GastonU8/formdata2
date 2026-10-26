@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ingresar · {{ nombre_sistema }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+<div class="acceso">
+  <section class="acceso__relato">
+    <span class="etiqueta" style="color:#7fc9ac">{{ descripcion_sistema }}</span>
+    <h1>Form<span>Data</span></h1>
+    <p>El histórico de mezclas, tratamientos y ensayos deja de vivir en una planilla y pasa a ser consultable.</p>
+    <ul class="acceso__lista">
+      <li><span class="dato">01</span> Se importa el Excel tal como se carga hoy.</li>
+      <li><span class="dato">02</span> Los nombres de producto resuelven contra el maestro técnico.</li>
+      <li><span class="dato">03</span> Los antecedentes se buscan por activo, cultivo, cliente o resultado.</li>
+    </ul>
+  </section>
+
+  <section class="acceso__panel">
+    <div class="acceso__caja">
+      <h2 style="margin-bottom:.2rem">Ingresar</h2>
+      <p style="color:var(--tinta-suave);font-size:.88rem;margin:0 0 1.2rem">
+        Usá la cuenta que te dio el administrador del sistema.
+      </p>
+
+      {% with mensajes = get_flashed_messages(with_categories=true) %}
+        {% if mensajes %}
+          <div class="avisos" role="alert">
+            {% for categoria, texto in mensajes %}
+              <div class="aviso aviso--{{ categoria }}">{{ texto }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <form method="post" novalidate>
+        {{ formulario.hidden_tag() }}
+
+        <div class="campo">
+          {{ formulario.email.label }}
+          {{ formulario.email(autocomplete="username", autofocus=true, inputmode="email") }}
+          {% for e in formulario.email.errors %}<span class="campo__error">{{ e }}</span>{% endfor %}
+        </div>
+
+        <div class="campo">
+          {{ formulario.password.label }}
+          {{ formulario.password(autocomplete="current-password") }}
+          {% for e in formulario.password.errors %}<span class="campo__error">{{ e }}</span>{% endfor %}
+        </div>
+
+        <div class="campo campo--casilla">
+          {{ formulario.recordarme() }} {{ formulario.recordarme.label }}
+        </div>
+
+        <button class="boton boton--ancho" type="submit">Ingresar</button>
+      </form>
+    </div>
+  </section>
+</div>
+</body>
+</html>

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ titulo }} · {{ nombre_sistema }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+<main class="pagina-error">
+  <div>
+    <div class="codigo dato">{{ codigo }}</div>
+    <h1>{{ titulo }}</h1>
+    <p>{{ detalle }}</p>
+    <a class="boton boton--suave" href="{{ url_for('panel.inicio') }}">Volver al tablero</a>
+  </div>
+</main>
+</body>
+</html>

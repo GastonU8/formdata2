@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block titulo %}Auditoría{% endblock %}
+
+{% block contenido %}
+<header class="encabezado">
+  <span class="etiqueta">Administración</span>
+  <h1>Bitácora de auditoría</h1>
+  <p>
+    Registro append-only de las acciones sensibles. La aplicación escribe acá pero no
+    edita ni borra: una bitácora que el sistema puede modificar no prueba nada.
+  </p>
+</header>
+
+<div class="rejilla rejilla--cuatro">
+  <div class="tarjeta cifra">
+    <span class="etiqueta">Eventos</span>
+    <span class="cifra__valor">{{ resumen.eventos|numero }}</span>
+    <span class="cifra__pie">últimos {{ resumen.dias }} días</span>
+  </div>
+  <div class="tarjeta cifra">
+    <span class="etiqueta">Fallidos</span>
+    <span class="cifra__valor {{ 'cifra__valor--aviso' if resumen.fallidos }}">{{ resumen.fallidos|numero }}</span>
+    <span class="cifra__pie">intentos que no prosperaron</span>
+  </div>
+  <div class="tarjeta cifra">
+    <span class="etiqueta">Usuarios</span>
+    <span class="cifra__valor">{{ resumen.usuarios_activos|numero }}</span>
+    <span class="cifra__pie">con actividad</span>
+  </div>
+  <div class="tarjeta cifra">
+    <span class="etiqueta">Total histórico</span>
+    <span class="cifra__valor">{{ pagina.total|numero }}</span>
+    <span class="cifra__pie">registros que cumplen el filtro</span>
+  </div>
+</div>
+
+<form class="filtros" hx-get="{{ url_for('admin.bitacora') }}"
+      hx-target="#bitacora" hx-swap="outerHTML"
+      hx-trigger="submit, change from:select, change from:input[type=date], change from:input[type=checkbox], keyup changed delay:400ms from:input[type=search]"
+      hx-push-url="true">
+  <div class="filtros__fila">
+    <div class="campo campo--ancho">
+      <label for="texto">Buscar</label>
+      <input type="search" id="texto" name="texto" value="{{ filtros.texto }}"
+             placeholder="acción, email, entidad…" autocomplete="off">
+    </div>
+    <div class="campo">
+      <label for="accion">Acción</label>
+      <select id="accion" name="accion">
+        <option value="">Todas</option>
+        {% for valor, nombre in acciones %}
+          <option value="{{ valor }}" {% if filtros.accion == valor %}selected{% endif %}>{{ nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="campo">
+      <label for="usuario">Usuario</label>
+      <select id="usuario" name="usuario">
+        <option value="">Todos</option>
+        {% for u in usuarios_disponibles %}
+          <option value="{{ u.id }}" {% if filtros.usuario_id == u.id %}selected{% endif %}>{{ u.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <div class="filtros__fila filtros__fila--pie">
+    <div class="campo">
+      <label for="desde">Desde</label>
+      <input type="date" id="desde" name="desde" value="{{ filtros.desde.isoformat() if filtros.desde }}">
+    </div>
+    <div class="campo">
+      <label for="hasta">Hasta</label>
+      <input type="date" id="hasta" name="hasta" value="{{ filtros.hasta.isoformat() if filtros.hasta }}">
+    </div>
+    <div class="campo campo--casilla">
+      <label for="fallidos">
+        <input type="checkbox" id="fallidos" name="fallidos" value="1" {% if filtros.solo_fallidos %}checked{% endif %}>
+        Solo intentos fallidos
+      </label>
+    </div>
+    <div class="filtros__acciones">
+      {% if filtros.hay_alguno %}
+        <a class="enlace-accion" href="{{ url_for('admin.bitacora') }}">Limpiar filtros</a>
+      {% endif %}
+      <noscript><button class="boton" type="submit">Filtrar</button></noscript>
+    </div>
+  </div>
+</form>
+
+{% include "admin/_bitacora.html" %}
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block titulo %}Usuarios{% endblock %}
+
+{% block contenido %}
+<header class="encabezado encabezado--ficha">
+  <div>
+    <span class="etiqueta">Administración</span>
+    <h1>Usuarios del sistema</h1>
+    <p>
+      Los usuarios no se borran: se suspenden o se dan de baja. Su nombre tiene que
+      seguir explicando lo que hicieron en la bitácora.
+    </p>
+  </div>
+  <a class="boton" href="{{ url_for('admin.nuevo_usuario') }}">Nuevo usuario</a>
+</header>
+
+<div class="rejilla rejilla--cuatro">
+  <div class="tarjeta cifra">
+    <span class="etiqueta">Activos</span>
+    <span class="cifra__valor">{{ resumen.activos|numero }}</span>
+  </div>
+  <div class="tarjeta cifra">
+    <span class="etiqueta">Suspendidos</span>
+    <span class="cifra__valor">{{ resumen.suspendidos|numero }}</span>
+  </div>
+  <div class="tarjeta cifra">
+    <span class="etiqueta">Bajas</span>
+    <span class="cifra__valor">{{ resumen.bajas|numero }}</span>
+  </div>
+  <div class="tarjeta cifra">
+    <span class="etiqueta">Bloqueados</span>
+    <span class="cifra__valor {{ 'cifra__valor--aviso' if resumen.bloqueados }}">{{ resumen.bloqueados|numero }}</span>
+  </div>
+</div>
+
+<form class="filtros" hx-get="{{ url_for('admin.listar_usuarios') }}"
+      hx-target="#lista-usuarios" hx-swap="outerHTML"
+      hx-trigger="submit, change from:select, keyup changed delay:400ms from:input[type=search]"
+      hx-push-url="true">
+  <div class="filtros__fila">
+    <div class="campo campo--ancho">
+      <label for="texto">Buscar</label>
+      <input type="search" id="texto" name="texto" value="{{ texto }}" placeholder="nombre o email" autocomplete="off">
+    </div>
+    <div class="campo">
+      <label for="rol">Rol</label>
+      <select id="rol" name="rol">
+        <option value="">Todos</option>
+        {% for r in roles %}<option value="{{ r.clave }}" {% if rol == r.clave %}selected{% endif %}>{{ r.nombre }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="campo">
+      <label for="estado">Estado</label>
+      <select id="estado" name="estado">
+        <option value="">Todos</option>
+        {% for e in estados %}<option value="{{ e.value }}" {% if estado_filtro == e.value %}selected{% endif %}>{{ e.value }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="filtros__acciones">
+      <noscript><button class="boton" type="submit">Filtrar</button></noscript>
+    </div>
+  </div>
+</form>
+
+{% include "admin/_usuarios.html" %}
+{% endblock %}

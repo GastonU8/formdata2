@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block titulo %}{{ rol.nombre if rol else 'Nuevo rol' }}{% endblock %}
+
+{% block contenido %}
+<nav class="miga" aria-label="Ubicación">
+  <a href="{{ url_for('admin.listar_roles') }}">Roles</a> /
+  {{ rol.nombre if rol else 'nuevo' }}
+</nav>
+
+<header class="encabezado">
+  <span class="etiqueta">Administración</span>
+  <h1>{{ rol.nombre if rol else 'Nuevo rol' }}</h1>
+  <p>
+    {% if rol and rol.es_del_sistema %}
+      Es un rol del sistema: no se puede borrar y su clave no cambia, porque hay
+      reglas del código que la nombran. Sus capacidades sí se editan como las de
+      cualquier otro.
+    {% else %}
+      Las capacidades marcadas son lo que va a poder hacer quien tenga este rol. Lo
+      que dejes sin marcar, no lo verá ni podrá ejecutarlo.
+    {% endif %}
+  </p>
+</header>
+
+<form method="post" class="tarjeta">
+  {{ formulario.hidden_tag() }}
+
+  <div class="filtros__fila">
+    <div class="campo campo--ancho">
+      <label for="nombre">Nombre <span class="requerido">*</span></label>
+      <input type="text" id="nombre" name="nombre" required maxlength="120"
+             value="{{ enviado.get('nombre') or (rol.nombre if rol else '') }}">
+    </div>
+    <div class="campo campo--ancho">
+      <label for="descripcion">Para qué es</label>
+      <input type="text" id="descripcion" name="descripcion" maxlength="400"
+             value="{{ enviado.get('descripcion') or (rol.descripcion if rol else '') or '' }}"
+             placeholder="Solo lectura y bitácora, para auditoría externa">
+    </div>
+    {% if rol %}
+      <div class="campo">
+        <label>Clave</label>
+        <input type="text" value="{{ rol.clave }}" disabled>
+      </div>
+    {% endif %}
+  </div>
+
+  {% for grupo, claves in grupos.items() %}
+    <fieldset class="permisos">
+      <legend>{{ grupo }}</legend>
+      {% for clave in claves %}
+        <label class="permiso {{ 'permiso--critico' if clave in ('gestionar_usuarios', 'gestionar_roles') }}">
+          <input type="checkbox" name="capacidades" value="{{ clave }}"
+                 {% if clave in marcadas %}checked{% endif %}>
+          <span>
+            {{ capacidades[clave] }}
+            <small class="dato">{{ clave }}</small>
+          </span>
+        </label>
+      {% endfor %}
+    </fieldset>
+  {% endfor %}
+
+  <p class="nota">
+    Las dos capacidades de administración están resaltadas: el sistema no te va a
+    dejar guardar un cambio que deje a la instalación sin ningún rol con usuarios
+    activos que las tenga, porque después no habría forma de volver.
+  </p>
+
+  <div class="acciones-horizontales">
+    <button class="boton" type="submit">{{ 'Guardar cambios' if rol else 'Crear rol' }}</button>
+    <a class="boton boton--suave" href="{{ url_for('admin.listar_roles') }}">Cancelar</a>
+  </div>
+</form>
+
+{% if rol and not rol.es_del_sistema %}
+  <section class="tarjeta">
+    <div class="tarjeta__cabecera"><h2>Eliminar</h2></div>
+    <form method="post" action="{{ url_for('admin.eliminar_rol', rol_id=rol.id) }}"
+          class="acciones-horizontales">
+      {{ formulario.hidden_tag() }}
+      <button class="boton boton--peligro" type="submit">Eliminar este rol</button>
+      <span class="nota">
+        Solo se puede si no tiene usuarios asignados. Los usuarios no se borran junto
+        con el rol: habría que decidir por ellos a qué rol pasan.
+      </span>
+    </form>
+  </section>
+{% endif %}
+{% endblock %}

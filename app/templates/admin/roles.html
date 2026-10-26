@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block titulo %}Roles{% endblock %}
+
+{% block contenido %}
+<header class="encabezado encabezado--ficha">
+  <div>
+    <span class="etiqueta">Administración</span>
+    <h1>Roles y permisos</h1>
+    <p>
+      Qué puede hacer cada rol se configura acá, sin tocar código. El catálogo de
+      capacidades, en cambio, viene con el sistema: cada una corresponde a una acción
+      que existe en las pantallas.
+    </p>
+  </div>
+  <a class="boton" href="{{ url_for('admin.nuevo_rol') }}">Nuevo rol</a>
+</header>
+
+{# La matriz completa de un vistazo. Es lo que reemplaza al «abrir el archivo de
+   permisos y leerlo»: sin esta vista, saber quién puede qué obligaría a entrar rol
+   por rol. #}
+<section class="tarjeta">
+  <div class="tarjeta__cabecera">
+    <h2>Quién puede qué</h2>
+    <span class="etiqueta">{{ filas|length }} roles · {{ capacidades|length }} capacidades</span>
+  </div>
+
+  <div class="tabla-envoltorio">
+    <table class="tabla tabla--matriz">
+      <thead>
+        <tr>
+          <th scope="col">Capacidad</th>
+          {% for f in filas %}
+            <th scope="col" class="num">
+              <a href="{{ url_for('admin.editar_rol', rol_id=f.rol.id) }}">{{ f.rol.nombre }}</a>
+              <small>{{ f.usuarios_activos }} activo{{ 's' if f.usuarios_activos != 1 }}</small>
+            </th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+      {% for grupo, claves in grupos.items() %}
+        <tr class="fila--grupo">
+          <th scope="rowgroup" colspan="{{ filas|length + 1 }}">{{ grupo }}</th>
+        </tr>
+        {% for clave in claves %}
+          <tr>
+            <td>{{ capacidades[clave] }}<small class="dato">{{ clave }}</small></td>
+            {% for f in filas %}
+              <td class="num">
+                {% if f.rol.tiene(clave) %}
+                  <span class="marca marca--si" title="Sí">●</span>
+                {% else %}
+                  <span class="marca marca--no" title="No">·</span>
+                {% endif %}
+              </td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="tarjeta">
+  <div class="tarjeta__cabecera"><h2>Los roles</h2></div>
+  <table class="tabla">
+    <tbody>
+    {% for f in filas %}
+      <tr>
+        <td>
+          <a href="{{ url_for('admin.editar_rol', rol_id=f.rol.id) }}">{{ f.rol.nombre }}</a>
+          {% if f.rol.es_del_sistema %}<span class="estado estado--ok">del sistema</span>{% endif %}
+          {% if f.rol.descripcion %}<small>{{ f.rol.descripcion }}</small>{% endif %}
+        </td>
+        <td class="dato">{{ f.rol.clave }}</td>
+        <td class="num">{{ f.rol.capacidades|length }} capacidad(es)</td>
+        <td class="num">
+          {% if f.usuarios_totales %}
+            <a href="{{ url_for('admin.listar_usuarios', rol=f.rol.clave) }}">{{ f.usuarios_totales }} usuario(s)</a>
+          {% else %}sin usuarios{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

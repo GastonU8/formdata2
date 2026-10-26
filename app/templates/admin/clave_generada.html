@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block titulo %}Contraseña inicial{% endblock %}
+
+{% block contenido %}
+<header class="encabezado">
+  <span class="etiqueta">Administración</span>
+  <h1>Contraseña inicial de {{ usuario.nombre }}</h1>
+  <p>
+    Esta pantalla es la única vez que se muestra. No queda guardada en claro en
+    ningún lado: si se pierde, hay que restablecerla, y ese restablecimiento también
+    queda registrado.
+  </p>
+</header>
+
+<section class="tarjeta">
+  {# La clave grande y en fuente monoespaciada porque se va a dictar en voz alta o
+     copiar a mano: a ese tamaño no se confunde una letra con otra. #}
+  <p class="clave-generada">{{ clave }}</p>
+  <p class="nota">
+    Entregásela a {{ usuario.nombre }} por un canal aparte —no por el mismo correo
+    donde está su usuario— y avisale que el sistema le va a pedir cambiarla apenas entre.
+  </p>
+  <div class="acciones-horizontales">
+    <a class="boton" href="{{ url_for('admin.ver_usuario', usuario_id=usuario.id) }}">Listo</a>
+    <a class="boton boton--suave" href="{{ url_for('admin.listar_usuarios') }}">Volver a la lista</a>
+  </div>
+</section>
+{% endblock %}

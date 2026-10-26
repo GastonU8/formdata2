@@ -1,0 +1,64 @@
+<section class="tarjeta" id="bitacora">
+  <div class="tarjeta__cabecera">
+    <h2>{{ pagina.total|numero }} registro{{ 's' if pagina.total != 1 }}</h2>
+    {% if filtros.hay_alguno %}
+      <span class="etiqueta">{{ filtros.descripcion()|join(', ') }}</span>
+    {% endif %}
+  </div>
+
+  {% if pagina.items %}
+    <div class="tabla-envoltorio">
+      <table class="tabla tabla--compacta">
+        <thead>
+          <tr>
+            <th scope="col">Cuándo</th>
+            <th scope="col">Quién</th>
+            <th scope="col">Qué</th>
+            <th scope="col">Sobre qué</th>
+            <th scope="col">Origen</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for r in pagina.items %}
+          <tr class="{{ 'fila--fallida' if not r.exito }}">
+            <td class="dato">{{ r.ocurrido_en|fecha_hora }}</td>
+            <td>
+              {% if r.usuario %}
+                <a href="{{ url_for('admin.ver_usuario', usuario_id=r.usuario_id) }}">{{ r.usuario.nombre }}</a>
+              {% elif r.email_intentado %}
+                <span class="dato">{{ r.email_intentado }}</span>
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {{ etiqueta(r.accion) }}
+              {% if not r.exito %}<span class="estado estado--error">falló</span>{% endif %}
+            </td>
+            <td class="dato">
+              {{ r.entidad or '—' }}{% if r.entidad_id %} #{{ r.entidad_id }}{% endif %}
+              {% if r.datos %}<small>{{ r.datos }}</small>{% endif %}
+            </td>
+            <td class="dato">{{ r.ip_origen or '—' }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if pagina.paginas > 1 %}
+      <div class="paginacion">
+        {% if pagina.hay_anterior %}
+          <a class="paginacion__item" href="{{ url_for('admin.bitacora', pagina=pagina.pagina - 1, **argumentos) }}">← Anteriores</a>
+        {% endif %}
+        <span class="paginacion__estado">Página {{ pagina.pagina }} de {{ pagina.paginas }}</span>
+        {% if pagina.hay_siguiente %}
+          <a class="paginacion__item" href="{{ url_for('admin.bitacora', pagina=pagina.pagina + 1, **argumentos) }}">Siguientes →</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="vacio">
+      <strong>No hay registros con esos criterios</strong>
+      Probá ampliando el rango de fechas o sacando algún filtro.
+    </div>
+  {% endif %}
+</section>

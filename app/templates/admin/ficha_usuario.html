@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block titulo %}{{ usuario.nombre }}{% endblock %}
+
+{% block contenido %}
+<nav class="miga" aria-label="Ubicación">
+  <a href="{{ url_for('admin.listar_usuarios') }}">Usuarios</a> / {{ usuario.nombre }}
+</nav>
+
+<header class="encabezado encabezado--ficha">
+  <div>
+    <span class="etiqueta">{{ usuario.rol.etiqueta }}</span>
+    <h1>{{ usuario.nombre }}</h1>
+    <p class="dato">{{ usuario.email }}</p>
+  </div>
+  <div class="acciones-verticales">
+    <span class="estado estado--{{ 'ok' if usuario.estado.value == 'activo' else 'pendiente' }} estado--grande">{{ usuario.estado.value }}</span>
+    <a class="boton boton--suave" href="{{ url_for('admin.editar_usuario', usuario_id=usuario.id) }}">Editar</a>
+  </div>
+</header>
+
+<div class="rejilla rejilla--cuatro">
+  <div class="tarjeta cifra">
+    <span class="etiqueta">Último acceso</span>
+    <span class="cifra__valor dato" style="font-size:1rem">{{ usuario.ultimo_acceso|fecha_hora if usuario.ultimo_acceso else 'nunca' }}</span>
+  </div>
+  <div class="tarjeta cifra">
+    <span class="etiqueta">Alta</span>
+    <span class="cifra__valor dato" style="font-size:1rem">{{ usuario.creado_en|fecha }}</span>
+  </div>
+  <div class="tarjeta cifra">
+    <span class="etiqueta">Intentos fallidos</span>
+    <span class="cifra__valor {{ 'cifra__valor--aviso' if usuario.intentos_fallidos }}">{{ usuario.intentos_fallidos }}</span>
+  </div>
+  <div class="tarjeta cifra">
+    <span class="etiqueta">Contraseña</span>
+    <span class="cifra__valor dato" style="font-size:1rem">{{ 'debe cambiarla' if usuario.debe_cambiar_password else 'propia' }}</span>
+  </div>
+</div>
+
+<section class="tarjeta">
+  <div class="tarjeta__cabecera">
+    <h2>Acciones sobre la cuenta</h2>
+    <span class="etiqueta">Todo queda auditado</span>
+  </div>
+
+  <div class="acciones-horizontales">
+    {% if usuario.estado.value == 'activo' %}
+      <form method="post" action="{{ url_for('admin.estado_usuario', usuario_id=usuario.id) }}">
+        {{ formulario.hidden_tag() }}
+        <input type="hidden" name="estado" value="suspendido">
+        <button class="boton boton--suave" type="submit">Suspender</button>
+      </form>
+      <form method="post" action="{{ url_for('admin.estado_usuario', usuario_id=usuario.id) }}">
+        {{ formulario.hidden_tag() }}
+        <input type="hidden" name="estado" value="baja">
+        <button class="boton boton--peligro" type="submit">Dar de baja</button>
+      </form>
+    {% else %}
+      <form method="post" action="{{ url_for('admin.estado_usuario', usuario_id=usuario.id) }}">
+        {{ formulario.hidden_tag() }}
+        <input type="hidden" name="estado" value="activo">
+        <button class="boton" type="submit">Reactivar</button>
+      </form>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('admin.restablecer', usuario_id=usuario.id) }}">
+      {{ formulario.hidden_tag() }}
+      <button class="boton boton--suave" type="submit">Restablecer contraseña</button>
+    </form>
+
+    {% if usuario.bloqueado_hasta or usuario.intentos_fallidos %}
+      <form method="post" action="{{ url_for('admin.desbloquear', usuario_id=usuario.id) }}">
+        {{ formulario.hidden_tag() }}
+        <button class="boton boton--suave" type="submit">Levantar bloqueo</button>
+      </form>
+    {% endif %}
+  </div>
+
+  <p class="nota">
+    Suspender es temporal (una licencia, una cuenta bajo sospecha); dar de baja es
+    definitivo. En los dos casos el usuario sigue existiendo y su nombre sigue
+    explicando lo que hizo. Nunca se borra.
+  </p>
+</section>
+
+<section class="tarjeta">
+  <div class="tarjeta__cabecera">
+    <h2>Historial de esta cuenta</h2>
+    <span class="etiqueta">Lo que se le hizo, y quién</span>
+  </div>
+  {% if historia_cuenta %}
+    <table class="tabla">
+      <tbody>
+      {% for r in historia_cuenta %}
+        <tr>
+          <td class="dato">{{ r.ocurrido_en|fecha_hora }}</td>
+          <td>{{ etiqueta(r.accion) }}</td>
+          <td>
+            {% if r.usuario %}
+              por <a href="{{ url_for('admin.ver_usuario', usuario_id=r.usuario_id) }}">{{ r.usuario.nombre }}</a>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="vacio"><strong>La cuenta se creó antes de que existiera la bitácora</strong></div>
+  {% endif %}
+</section>
+
+<section class="tarjeta">
+  <div class="tarjeta__cabecera">
+    <h2>Últimas acciones de {{ usuario.nombre }}</h2>
+    <a class="enlace-accion" href="{{ url_for('admin.bitacora', usuario=usuario.id) }}">Ver todo en la bitácora →</a>
+  </div>
+  {% if actividad %}
+    <table class="tabla">
+      <tbody>
+      {% for r in actividad %}
+        <tr>
+          <td class="dato">{{ r.ocurrido_en|fecha_hora }}</td>
+          <td>{{ etiqueta(r.accion) }}{% if not r.exito %} <span class="estado estado--error">falló</span>{% endif %}</td>
+          <td class="dato">{{ r.entidad or '' }}{% if r.entidad_id %} #{{ r.entidad_id }}{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="vacio"><strong>Todavía no hizo nada en el sistema</strong></div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,39 @@
+<section class="tarjeta" id="lista-usuarios">
+  {% if usuarios %}
+    <div class="tabla-envoltorio">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th scope="col">Nombre</th>
+            <th scope="col">Email</th>
+            <th scope="col">Rol</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Último acceso</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for u in usuarios %}
+          <tr>
+            <td>
+              <a href="{{ url_for('admin.ver_usuario', usuario_id=u.id) }}">{{ u.nombre }}</a>
+              {% if u.bloqueado_hasta %}<span class="estado estado--pendiente">bloqueado</span>{% endif %}
+              {% if u.debe_cambiar_password %}<small>debe cambiar su contraseña</small>{% endif %}
+            </td>
+            <td class="dato">{{ u.email }}</td>
+            <td>{{ u.rol.etiqueta }}</td>
+            <td>
+              <span class="estado estado--{{ 'ok' if u.estado.value == 'activo' else 'pendiente' }}">{{ u.estado.value }}</span>
+            </td>
+            <td class="dato">{{ u.ultimo_acceso|fecha_hora if u.ultimo_acceso else '—' }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="vacio">
+      <strong>Ningún usuario coincide con esos criterios</strong>
+      Probá sacando algún filtro.
+    </div>
+  {% endif %}
+</section>

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block titulo %}{{ 'Editar usuario' if usuario else 'Nuevo usuario' }}{% endblock %}
+
+{% macro valor(campo) -%}
+  {{ enviado.get(campo) if enviado.get(campo) is not none else (usuario[campo] if usuario else '') or '' }}
+{%- endmacro %}
+
+{% block contenido %}
+<nav class="miga" aria-label="Ubicación">
+  <a href="{{ url_for('admin.listar_usuarios') }}">Usuarios</a> /
+  {% if usuario %}<a href="{{ url_for('admin.ver_usuario', usuario_id=usuario.id) }}">{{ usuario.nombre }}</a> / editar{% else %}nuevo{% endif %}
+</nav>
+
+<header class="encabezado">
+  <span class="etiqueta">Administración</span>
+  <h1>{{ 'Editar usuario' if usuario else 'Nuevo usuario' }}</h1>
+  <p>
+    {% if usuario %}
+      El email no se puede reutilizar entre personas: es lo que ata cada acción de la
+      bitácora a quien la hizo.
+    {% else %}
+      El sistema genera una contraseña inicial de un solo uso y obliga a cambiarla en
+      el primer ingreso. Vos no elegís la contraseña de otro.
+    {% endif %}
+  </p>
+</header>
+
+<form method="post" class="tarjeta">
+  {{ formulario.hidden_tag() }}
+  <div class="filtros__fila">
+    <div class="campo campo--ancho">
+      <label for="nombre">Nombre y apellido <span class="requerido">*</span></label>
+      <input type="text" id="nombre" name="nombre" required maxlength="120" value="{{ valor('nombre')|trim }}">
+    </div>
+    <div class="campo campo--ancho">
+      <label for="email">Email <span class="requerido">*</span></label>
+      <input type="email" id="email" name="email" required maxlength="180" value="{{ valor('email')|trim }}">
+    </div>
+    <div class="campo">
+      <label for="rol">Rol <span class="requerido">*</span></label>
+      <select id="rol" name="rol" required>
+        {% set actual = enviado.get('rol') or (usuario.rol.clave if usuario else '') %}
+        {% for r in roles %}
+          <option value="{{ r.clave }}" {% if actual == r.clave %}selected{% endif %}>{{ r.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <div class="acciones-horizontales">
+    <button class="boton" type="submit">{{ 'Guardar cambios' if usuario else 'Crear usuario' }}</button>
+    <a class="boton boton--suave" href="{{ url_for('admin.ver_usuario', usuario_id=usuario.id) if usuario else url_for('admin.listar_usuarios') }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

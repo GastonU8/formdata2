@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block titulo %}Solicitudes{% endblock %}
+
+{% block contenido %}
+<header class="encabezado encabezado--ficha">
+  <div>
+    <span class="etiqueta">Circuito</span>
+    <h1>Bandeja de solicitudes</h1>
+    <p>Mezclas pedidas por clientes, en las etapas que te tocan a vos.</p>
+  </div>
+  {% if puede('registrar_solicitud') %}
+    <a class="boton" href="{{ url_for('solicitudes.nueva') }}">Nueva solicitud</a>
+  {% endif %}
+</header>
+
+<nav class="pestanas" aria-label="Filtrar por estado">
+  <a class="pestana {% if not estado_activo %}pestana--activa{% endif %}"
+     href="{{ url_for('solicitudes.bandeja') }}">
+    Todas <span class="pestana__conteo dato">{{ conteos.values()|sum }}</span>
+  </a>
+  {% for estado, cantidad in conteos.items() %}
+    <a class="pestana {% if estado_activo == estado %}pestana--activa{% endif %}"
+       href="{{ url_for('solicitudes.bandeja', estado=estado.value) }}">
+      {{ estado.etiqueta }} <span class="pestana__conteo dato">{{ cantidad }}</span>
+    </a>
+  {% endfor %}
+</nav>
+
+<section class="tarjeta">
+  {% if pendientes %}
+    <div class="tabla-envoltorio">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th scope="col">Solicitud</th><th scope="col">Cliente</th>
+            <th scope="col">Cultivo</th><th scope="col" class="num">Productos</th>
+            <th scope="col">Solicitó</th><th scope="col">Estado</th>
+            <th scope="col">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for t in pendientes %}
+          {% set cantidad = t.mezclas|map(attribute='detalles')|map('length')|sum %}
+          <tr>
+            <td><a class="dato" href="{{ url_for('solicitudes.detalle', tratamiento_id=t.id) }}">{{ t.numero_tratamiento }}</a>
+              {% if t.target %}<small>{{ t.target }}</small>{% endif %}</td>
+            <td>{{ t.cliente.nombre if t.cliente else '—' }}</td>
+            <td>{{ t.cultivo or '—' }}</td>
+            <td class="num">{{ cantidad }}</td>
+            <td>{{ t.solicitado_por.nombre if t.solicitado_por else '—' }}</td>
+            <td><span class="estado estado--{{ t.estado_flujo.tono }}">{{ t.estado_flujo.etiqueta }}</span></td>
+            <td>
+              {% set acciones = acciones_de(t) %}
+              {% if acciones %}
+                <a class="enlace-accion" href="{{ url_for('solicitudes.detalle', tratamiento_id=t.id) }}">{{ acciones[0].etiqueta }} →</a>
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="vacio">
+      <strong>No hay solicitudes en esta etapa</strong>
+      {% if puede('registrar_solicitud') %}
+        Cuando un cliente pida una mezcla, registrala con «Nueva solicitud».
+      {% else %}
+        Cuando el área comercial envíe una, va a aparecer acá.
+      {% endif %}
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

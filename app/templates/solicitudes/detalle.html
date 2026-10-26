@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block titulo %}{{ tratamiento.numero_tratamiento }}{% endblock %}
+
+{% block contenido %}
+<nav class="miga">
+  <a href="{{ url_for('solicitudes.bandeja') }}">Solicitudes</a>
+  <span aria-hidden="true">/</span><span class="dato">{{ tratamiento.numero_tratamiento }}</span>
+</nav>
+
+<header class="encabezado encabezado--ficha">
+  <div>
+    <span class="etiqueta">{{ tratamiento.tipo_tratamiento or 'Solicitud de mezcla' }}</span>
+    <h1 class="dato">{{ tratamiento.numero_tratamiento }}</h1>
+    <p>
+      {{ tratamiento.cultivo or 'Sin cultivo' }}
+      {%- if tratamiento.cliente %} · {{ tratamiento.cliente.nombre }}{% endif %}
+      {%- if tratamiento.target %} · {{ tratamiento.target }}{% endif %}
+    </p>
+  </div>
+  <span class="estado estado--{{ tratamiento.estado_flujo.tono }} estado--grande">
+    {{ tratamiento.estado_flujo.etiqueta }}
+  </span>
+</header>
+
+{# --- Línea de tiempo: dónde está la solicitud dentro del circuito --- #}
+{% set indice_actual = secuencia.index(tratamiento.estado_flujo) if tratamiento.estado_flujo in secuencia else -1 %}
+<ol class="circuito" aria-label="Avance del circuito">
+  {% for estado in secuencia %}
+    {% set posicion = loop.index0 %}
+    <li class="circuito__paso
+        {% if indice_actual >= 0 and posicion < indice_actual %}circuito__paso--hecho
+        {% elif posicion == indice_actual %}circuito__paso--actual{% endif %}">
+      <span class="circuito__punto dato">{{ loop.index }}</span>
+      <span class="circuito__nombre">{{ estado.etiqueta }}</span>
+    </li>
+  {% endfor %}
+</ol>
+
+{% if tratamiento.estado_flujo.value in ('rechazada', 'anulada') and tratamiento.motivo_rechazo %}
+  <div class="aviso aviso--error" style="margin-bottom:1rem">
+    <strong>Motivo:</strong> {{ tratamiento.motivo_rechazo }}
+  </div>
+{% endif %}
+
+<section class="rejilla rejilla--ficha">
+  <div>
+    {% for mezcla in tratamiento.mezclas %}
+      <div class="tarjeta" style="margin-bottom:1rem">
+        <div class="tarjeta__cabecera">
+          <h2>{{ mezcla.nombre_mezcla or 'Mezcla' }}</h2>
+          <span class="etiqueta">{{ mezcla.detalles|length }} producto{{ 's' if mezcla.detalles|length != 1 }}</span>
+        </div>
+        <div class="tabla-envoltorio">
+          <table class="tabla">
+            <thead>
+              <tr><th scope="col" class="num" style="width:2.5rem">#</th><th scope="col">Producto</th>
+                  <th scope="col" class="num">Dosis</th><th scope="col">Maestro</th></tr>
+            </thead>
+            <tbody>
+            {% for d in mezcla.detalles %}
+              <tr>
+                <td class="num dato">{{ d.orden_producto }}</td>
+                <td>{{ d.nombre_original }}
+                  {% if d.producto and d.producto.activo %}<small>{{ d.producto.activo }}</small>{% endif %}</td>
+                <td class="num dato">{% if d.dosis is not none %}{{ '%.2f'|format(d.dosis) }} {{ d.unidad or '' }}{% else %}—{% endif %}</td>
+                <td>
+                  {% if d.producto %}
+                    <span class="estado estado--ok">vinculado</span>
+                  {% else %}
+                    <span class="estado estado--pendiente">sin mapear</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endfor %}
+
+    {% if tratamiento.observaciones %}
+      <div class="tarjeta" style="margin-bottom:1rem">
+        <div class="tarjeta__cabecera"><h2>Observaciones del pedido</h2></div>
+        <p class="nota">{{ tratamiento.observaciones }}</p>
+      </div>
+    {% endif %}
+
+    <div class="tarjeta">
+      <div class="tarjeta__cabecera">
+        <h2>Historial</h2>
+        <span class="etiqueta">Quién hizo qué y cuándo</span>
+      </div>
+      {% if tratamiento.historial %}
+        <ol class="historial">
+          {% for h in tratamiento.historial|reverse %}
+            <li class="historial__item">
+              <div class="historial__cabecera">
+                <strong>{{ h.hacia.etiqueta }}</strong>
+                <span class="dato">{{ h.ocurrido_en|fecha_hora }}</span>
+              </div>
+              <div class="historial__pie">
+                {{ h.usuario.nombre if h.usuario else 'Sistema' }}
+                {%- if h.desde %} · desde {{ h.desde.etiqueta|lower }}{% endif %}
+              </div>
+              {% if h.motivo %}<p class="nota">{{ h.motivo }}</p>{% endif %}
+            </li>
+          {% endfor %}
+        </ol>
+      {% else %}
+        <div class="vacio">Todavía sin movimientos.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <aside>
+    {% if acciones %}
+      <div class="tarjeta" style="margin-bottom:1rem">
+        <div class="tarjeta__cabecera"><h2>Acciones</h2></div>
+        {% for accion in acciones %}
+          <form method="post" class="accion-bloque"
+                action="{{ url_for('solicitudes.transicionar', tratamiento_id=tratamiento.id, accion=accion.accion) }}">
+            {{ formulario.hidden_tag() }}
+            {% if accion.requiere_motivo %}
+              <div class="campo">
+                <label for="motivo-{{ accion.accion }}">Motivo <span class="requerido">*</span></label>
+                <textarea id="motivo-{{ accion.accion }}" name="motivo" rows="2" required
+                          placeholder="Por qué {{ accion.etiqueta|lower }}"></textarea>
+              </div>
+            {% endif %}
+            <button class="boton boton--ancho {% if accion.tono == 'peligro' %}boton--peligro{% elif not loop.first %}boton--suave{% endif %}"
+                    type="submit">{{ accion.etiqueta }}</button>
+          </form>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="tarjeta" style="margin-bottom:1rem">
+      <div class="tarjeta__cabecera"><h2>Seguimiento</h2></div>
+      <dl class="datos">
+        <dt>Solicitó</dt><dd>{{ tratamiento.solicitado_por.nombre if tratamiento.solicitado_por else '—' }}</dd>
+        <dt>Enviada</dt><dd class="dato">{{ tratamiento.fecha_envio|fecha_hora }}</dd>
+        <dt>Aprobó</dt><dd>{{ tratamiento.aprobado_por.nombre if tratamiento.aprobado_por else '—' }}</dd>
+        <dt>Aprobada</dt><dd class="dato">{{ tratamiento.fecha_aprobacion|fecha_hora }}</dd>
+        <dt>Laboratorio</dt><dd>{{ tratamiento.tomado_por.nombre if tratamiento.tomado_por else '—' }}</dd>
+        <dt>Fecha prevista</dt><dd class="dato">{{ tratamiento.fecha|fecha }}</dd>
+      </dl>
+    </div>
+
+    {% if tratamiento.estado_flujo.value == 'finalizada' %}
+      <div class="tarjeta">
+        <div class="tarjeta__cabecera"><h2>Informe</h2></div>
+        <p class="nota" style="margin-bottom:.8rem">El ensayo está cerrado y sus resultados ya se consultan como cualquier tratamiento histórico.</p>
+        <a class="boton boton--suave boton--ancho" href="{{ url_for('tratamientos.detalle', tratamiento_id=tratamiento.id) }}">
+          Ver ficha completa
+        </a>
+      </div>
+    {% endif %}
+  </aside>
+</section>
+{% endblock %}

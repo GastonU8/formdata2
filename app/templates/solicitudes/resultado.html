@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block titulo %}Resultados de {{ tratamiento.numero_tratamiento }}{% endblock %}
+
+{% block contenido %}
+<nav class="miga">
+  <a href="{{ url_for('solicitudes.bandeja') }}">Solicitudes</a>
+  <span aria-hidden="true">/</span>
+  <a href="{{ url_for('solicitudes.detalle', tratamiento_id=tratamiento.id) }}" class="dato">{{ tratamiento.numero_tratamiento }}</a>
+  <span aria-hidden="true">/</span><span>Resultados</span>
+</nav>
+
+<header class="encabezado">
+  <span class="etiqueta">Circuito · paso 4 de 4</span>
+  <h1>Cargar resultados del ensayo</h1>
+  <p>Al guardar, el tratamiento queda finalizado y pasa a formar parte del histórico consultable.</p>
+</header>
+
+<form method="post" class="rejilla rejilla--ficha" novalidate>
+  {{ formulario.hidden_tag() }}
+
+  <div>
+    <div class="tarjeta" style="margin-bottom:1rem">
+      <div class="tarjeta__cabecera"><h2>Mediciones</h2></div>
+      <div class="rejilla rejilla--dos">
+        <div class="campo">
+          <label for="porcentaje_efectividad">Efectividad (%)</label>
+          <input type="text" inputmode="decimal" id="porcentaje_efectividad" name="porcentaje_efectividad"
+                 class="dato" value="{{ enviado.get('porcentaje_efectividad', '') }}" placeholder="0 a 100">
+        </div>
+        <div class="campo">
+          <label for="dureza_agua">Dureza del agua (ppm)</label>
+          <input type="text" inputmode="decimal" id="dureza_agua" name="dureza_agua"
+                 class="dato" value="{{ enviado.get('dureza_agua', '') }}">
+        </div>
+        <div class="campo">
+          <label for="ph_agua">pH del agua</label>
+          <input type="text" inputmode="decimal" id="ph_agua" name="ph_agua"
+                 class="dato" value="{{ enviado.get('ph_agua', '') }}" placeholder="0 a 14">
+        </div>
+        <div class="campo">
+          <label for="ph_mezcla">pH de la mezcla</label>
+          <input type="text" inputmode="decimal" id="ph_mezcla" name="ph_mezcla"
+                 class="dato" value="{{ enviado.get('ph_mezcla', '') }}" placeholder="0 a 14">
+        </div>
+        <div class="campo">
+          <label for="suspensibilidad">Suspensibilidad</label>
+          <input type="text" id="suspensibilidad" name="suspensibilidad" list="lista-suspensibilidad"
+                 value="{{ enviado.get('suspensibilidad', '') }}">
+          <datalist id="lista-suspensibilidad">
+            <option value="Buena"></option><option value="Regular"></option><option value="Deficiente"></option>
+          </datalist>
+        </div>
+        <div class="campo">
+          <label for="granulometria">Granulometría</label>
+          <input type="text" id="granulometria" name="granulometria" list="lista-granulometria"
+                 value="{{ enviado.get('granulometria', '') }}">
+          <datalist id="lista-granulometria">
+            <option value="Fina"></option><option value="Media"></option><option value="Gruesa"></option>
+          </datalist>
+        </div>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <div class="tarjeta__cabecera">
+        <h2>Observación del ensayo</h2>
+        <span class="etiqueta">Comportamiento en el tiempo</span>
+      </div>
+      <div class="campo">
+        <label for="observacion_cinco_min">A los 5 minutos</label>
+        <textarea id="observacion_cinco_min" name="observacion_cinco_min" rows="3">{{ enviado.get('observacion_cinco_min', '') }}</textarea>
+      </div>
+      <div class="campo">
+        <label for="observacion_diez_min">A los 10 minutos</label>
+        <textarea id="observacion_diez_min" name="observacion_diez_min" rows="3">{{ enviado.get('observacion_diez_min', '') }}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <aside>
+    <div class="tarjeta" style="margin-bottom:1rem">
+      <div class="tarjeta__cabecera"><h2>Mezcla ensayada</h2></div>
+      <ol class="lista-simple">
+        {% for mezcla in tratamiento.mezclas %}{% for d in mezcla.detalles %}
+          <li>{{ d.nombre_original }}
+            {% if d.dosis is not none %}<span class="dato">{{ '%.2f'|format(d.dosis) }} {{ d.unidad or '' }}</span>{% endif %}
+          </li>
+        {% endfor %}{% endfor %}
+      </ol>
+    </div>
+
+    <div class="tarjeta">
+      <div class="tarjeta__cabecera"><h2>Conclusión</h2></div>
+      <div class="campo">
+        <label for="estado_resultado">Resultado del ensayo <span class="requerido">*</span></label>
+        <select id="estado_resultado" name="estado_resultado" required>
+          <option value="">Elegir…</option>
+          {% for opcion in ['Compatible', 'Compatible con reservas', 'Incompatible'] %}
+            <option value="{{ opcion }}" {% if enviado.get('estado_resultado') == opcion %}selected{% endif %}>{{ opcion }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="acciones-verticales">
+        <button class="boton boton--ancho" type="submit">Guardar y finalizar</button>
+        <a class="enlace-accion" href="{{ url_for('solicitudes.detalle', tratamiento_id=tratamiento.id) }}">Volver sin guardar</a>
+      </div>
+    </div>
+  </aside>
+</form>
+{% endblock %}

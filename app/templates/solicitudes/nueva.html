@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block titulo %}Nueva solicitud{% endblock %}
+
+{% block contenido %}
+<nav class="miga">
+  <a href="{{ url_for('solicitudes.bandeja') }}">Solicitudes</a>
+  <span aria-hidden="true">/</span><span>Nueva</span>
+</nav>
+
+<header class="encabezado">
+  <span class="etiqueta">Circuito · paso 1 de 4</span>
+  <h1>Registrar mezcla pedida por un cliente</h1>
+  <p>Cargá la mezcla como te la pidieron. Al enviarla queda a la espera de que un supervisor la apruebe.</p>
+</header>
+
+<form method="post" class="rejilla rejilla--ficha" novalidate>
+  {{ formulario.hidden_tag() }}
+
+  <div>
+    <div class="tarjeta" style="margin-bottom:1rem">
+      <div class="tarjeta__cabecera">
+        <h2>Productos de la mezcla</h2>
+        <span class="etiqueta">En el orden en que se agregan al tanque</span>
+      </div>
+
+      <datalist id="lista-productos">
+        {% for p in productos %}
+          <option value="{{ p.nombre_comercial }}">{{ p.activo or '' }}</option>
+        {% endfor %}
+      </datalist>
+
+      <div class="tabla-envoltorio">
+        <table class="tabla tabla--formulario">
+          <thead>
+            <tr>
+              <th scope="col" style="width:52%">Producto</th>
+              <th scope="col" style="width:20%">Dosis</th>
+              <th scope="col" style="width:20%">Unidad</th>
+              <th scope="col"><span class="visualmente-oculto">Quitar</span></th>
+            </tr>
+          </thead>
+          <tbody id="productos">
+            {% for i in range(3) %}
+              {% include "solicitudes/_fila_producto.html" %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <button type="button" class="boton boton--suave" style="margin-top:.75rem"
+              hx-get="{{ url_for('solicitudes.fila_producto') }}"
+              hx-target="#productos" hx-swap="beforeend">
+        Agregar producto
+      </button>
+
+      <p class="nota" style="margin-top:.75rem">
+        Escribí el nombre como lo conocés. Si coincide con el maestro se vincula solo;
+        si no, queda marcado para que laboratorio lo resuelva.
+      </p>
+    </div>
+
+    <div class="tarjeta">
+      <div class="tarjeta__cabecera"><h2>Observaciones</h2></div>
+      <div class="campo">
+        <label for="observaciones">Qué pidió el cliente, condiciones, aclaraciones</label>
+        <textarea id="observaciones" name="observaciones" rows="4">{{ enviado.get('observaciones', '') }}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <aside>
+    <div class="tarjeta" style="margin-bottom:1rem">
+      <div class="tarjeta__cabecera"><h2>Datos del pedido</h2></div>
+
+      <div class="campo">
+        <label for="cliente">Cliente</label>
+        <select id="cliente" name="cliente">
+          <option value="">Sin especificar</option>
+          {% for c in clientes %}
+            <option value="{{ c.id }}" {% if enviado.get('cliente') == c.id|string %}selected{% endif %}>{{ c.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="campo">
+        <label for="cultivo">Cultivo <span class="requerido">*</span></label>
+        <input type="text" id="cultivo" name="cultivo" required
+               value="{{ enviado.get('cultivo', '') }}" placeholder="Soja, Maíz, Trigo…">
+      </div>
+
+      <div class="campo">
+        <label for="tipo">Tipo de ensayo</label>
+        <input type="text" id="tipo" name="tipo" list="lista-tipos"
+               value="{{ enviado.get('tipo', 'Compatibilidad') }}">
+        <datalist id="lista-tipos">
+          <option value="Compatibilidad"></option>
+          <option value="Eficacia"></option>
+          <option value="Estabilidad"></option>
+        </datalist>
+      </div>
+
+      <div class="campo">
+        <label for="target">Target</label>
+        <input type="text" id="target" name="target" value="{{ enviado.get('target', '') }}"
+               placeholder="Malezas de hoja ancha, roya…">
+      </div>
+
+      <div class="campo">
+        <label for="fecha">Fecha prevista</label>
+        <input type="date" id="fecha" name="fecha" value="{{ enviado.get('fecha', '') }}">
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <div class="acciones-verticales">
+        <button class="boton boton--ancho" type="submit" name="accion" value="enviar">
+          Enviar a aprobación
+        </button>
+        <button class="boton boton--suave boton--ancho" type="submit" name="accion" value="borrador">
+          Guardar como borrador
+        </button>
+        <a class="enlace-accion" href="{{ url_for('solicitudes.bandeja') }}">Cancelar</a>
+      </div>
+    </div>
+  </aside>
+</form>
+{% endblock %}

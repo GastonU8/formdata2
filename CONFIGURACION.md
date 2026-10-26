@@ -47,7 +47,7 @@ git commit -m "chore: estructura del proyecto y dependencias"
 ```
 
 El repositorio se inicializó al consolidar el proyecto y su historial está
-**organizado por etapas de construcción**, no por sesión de trabajo. Son 21
+**organizado por etapas de construcción**, no por sesión de trabajo. Son 23
 commits que reconstruyen el orden en que se levantó el sistema: cimientos,
 seguridad, circuito, importación, normalización, indicadores, asistente y
 administración.
@@ -108,7 +108,7 @@ git push -u origin main
 ```
 
 Verificación posterior: `git log --oneline` local y el historial de GitHub deben
-mostrar los mismos 21 commits.
+mostrar los mismos 23 commits.
 
 ---
 

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block titulo %}{{ 'Editar producto' if producto else 'Nuevo producto' }}{% endblock %}
+
+{% macro valor(campo) -%}
+  {{ enviado.get(campo) if enviado.get(campo) is not none else (producto[campo] if producto else '') or '' }}
+{%- endmacro %}
+
+{% block contenido %}
+<nav class="miga" aria-label="Ubicación">
+  <a href="{{ url_for('productos.listar') }}">Productos</a> /
+  {% if producto %}<a href="{{ url_for('productos.ficha', producto_id=producto.id) }}">{{ producto.nombre_comercial }}</a> / editar{% else %}nuevo{% endif %}
+</nav>
+
+<header class="encabezado">
+  <span class="etiqueta">Maestro de productos</span>
+  <h1>{{ 'Editar producto' if producto else 'Nuevo producto' }}</h1>
+  <p>
+    El nombre comercial es la identidad del producto: dos altas que se normalicen
+    igual se rechazan, porque un maestro con el mismo producto dos veces reparte
+    los usos entre ambas filas y desarma todos los indicadores.
+  </p>
+</header>
+
+<form method="post" class="tarjeta">
+  {{ formulario.hidden_tag() }}
+
+  <div class="filtros__fila">
+    <div class="campo campo--ancho">
+      <label for="nombre_comercial">Nombre comercial <span class="requerido">*</span></label>
+      <input type="text" id="nombre_comercial" name="nombre_comercial" required maxlength="180"
+             value="{{ valor('nombre_comercial')|trim }}" autocomplete="off">
+    </div>
+    <div class="campo">
+      <label for="numero_registro">N° de registro</label>
+      <input type="text" id="numero_registro" name="numero_registro" maxlength="60"
+             value="{{ valor('numero_registro')|trim }}">
+    </div>
+  </div>
+
+  <div class="filtros__fila">
+    <div class="campo campo--ancho">
+      <label for="activo">Principio activo</label>
+      <input type="text" id="activo" name="activo" maxlength="180"
+             value="{{ valor('activo')|trim }}" placeholder="Glifosato 66,2%">
+    </div>
+    <div class="campo">
+      <label for="categoria">Categoría</label>
+      <input type="text" id="categoria" name="categoria" maxlength="120"
+             value="{{ valor('categoria')|trim }}" placeholder="Herbicida">
+    </div>
+  </div>
+
+  <div class="filtros__fila">
+    <div class="campo">
+      <label for="marca">Marca</label>
+      <input type="text" id="marca" name="marca" maxlength="120" value="{{ valor('marca')|trim }}">
+    </div>
+    <div class="campo">
+      <label for="tipo_formulacion">Formulación</label>
+      <input type="text" id="tipo_formulacion" name="tipo_formulacion" maxlength="60"
+             value="{{ valor('tipo_formulacion')|trim }}" placeholder="SL, EC, WG…">
+    </div>
+  </div>
+
+  <div class="campo campo--ancho">
+    <label for="observaciones">Observaciones</label>
+    <textarea id="observaciones" name="observaciones" rows="3" maxlength="2000">{{ valor('observaciones')|trim }}</textarea>
+  </div>
+
+  <div class="acciones-horizontales">
+    <button class="boton" type="submit">{{ 'Guardar cambios' if producto else 'Crear producto' }}</button>
+    <a class="boton boton--suave"
+       href="{{ url_for('productos.ficha', producto_id=producto.id) if producto else url_for('productos.listar') }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

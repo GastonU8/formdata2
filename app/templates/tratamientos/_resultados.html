@@ -1,0 +1,94 @@
+{% macro enlace_pagina(numero, texto, deshabilitado=false) -%}
+  {% if deshabilitado %}
+    <span class="paginacion__item paginacion__item--inactivo">{{ texto }}</span>
+  {% else %}
+    <a class="paginacion__item"
+       href="{{ url_for('tratamientos.buscar', pagina=numero, **argumentos) }}"
+       hx-get="{{ url_for('tratamientos.buscar', pagina=numero, **argumentos) }}"
+       hx-target="#resultados" hx-select="#resultados" hx-swap="outerHTML" hx-push-url="true">{{ texto }}</a>
+  {% endif %}
+{%- endmacro %}
+
+<section id="resultados" class="tarjeta">
+  <div class="tarjeta__cabecera">
+    <h2>
+      {{ pagina.total|numero }}
+      {{ 'tratamiento' if pagina.total == 1 else 'tratamientos' }}
+    </h2>
+    {% if filtros.hay_alguno %}
+      <span class="etiqueta">Filtrando por {{ filtros.descripcion()|join(' · ') }}</span>
+    {% else %}
+      <span class="etiqueta">Histórico completo</span>
+    {% endif %}
+  </div>
+
+  {% if pagina.items %}
+    <div class="tabla-envoltorio">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th scope="col">Tratamiento</th>
+            <th scope="col">Fecha</th>
+            <th scope="col">Cliente</th>
+            <th scope="col">Cultivo</th>
+            <th scope="col">Tipo</th>
+            <th scope="col" class="num">Efectividad</th>
+            <th scope="col">Resultado</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for t in pagina.items %}
+          <tr class="fila-enlace">
+            <td>
+              <a class="fila-enlace__ancla dato" href="{{ url_for('tratamientos.detalle', tratamiento_id=t.id) }}">
+                {{ t.numero_tratamiento }}
+              </a>
+              {% if sin_mapear.get(t.id) %}
+                <small class="con-aviso">{{ sin_mapear[t.id] }} producto{{ 's' if sin_mapear[t.id] > 1 }} sin mapear</small>
+              {% elif t.target %}
+                <small>{{ t.target }}</small>
+              {% endif %}
+            </td>
+            <td class="dato">{{ t.fecha|fecha }}</td>
+            <td>{{ t.cliente.nombre if t.cliente else '—' }}</td>
+            <td>{{ t.cultivo or '—' }}</td>
+            <td>{{ t.tipo_tratamiento or '—' }}</td>
+            <td class="num">
+              {% if t.resultado and t.resultado.porcentaje_efectividad is not none %}
+                {{ '%.1f'|format(t.resultado.porcentaje_efectividad) }}%
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if t.resultado and t.resultado.estado_resultado %}
+                {% set e = t.resultado.estado_resultado %}
+                <span class="estado estado--{{ 'ok' if 'Incompatible' not in e and 'reservas' not in e else ('pendiente' if 'reservas' in e else 'error') }}">{{ e }}</span>
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if pagina.pages > 1 %}
+      <nav class="paginacion" aria-label="Paginación de resultados">
+        {{ enlace_pagina(pagina.prev_num, 'Anterior', not pagina.has_prev) }}
+        <span class="paginacion__estado dato">
+          Página {{ pagina.page }} de {{ pagina.pages }}
+        </span>
+        {{ enlace_pagina(pagina.next_num, 'Siguiente', not pagina.has_next) }}
+      </nav>
+    {% endif %}
+
+  {% else %}
+    <div class="vacio">
+      <strong>Ningún tratamiento coincide con esos criterios</strong>
+      {% if filtros.hay_alguno %}
+        Probá quitando el filtro más específico, o buscá por el nombre del activo en lugar
+        del producto comercial: los nombres comerciales cambian entre marcas.
+      {% else %}
+        Todavía no hay tratamientos cargados. La importación de Excel se habilita en la etapa 2B.
+      {% endif %}
+    </div>
+  {% endif %}
+</section>

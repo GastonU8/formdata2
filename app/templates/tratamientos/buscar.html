@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block titulo %}Tratamientos{% endblock %}
+
+{% block contenido %}
+<header class="encabezado encabezado--ficha">
+  <div>
+    <span class="etiqueta">Consulta</span>
+    <h1>Buscar tratamientos</h1>
+    <p>Combiná los criterios que necesites. Todo se filtra sobre el histórico importado.</p>
+  </div>
+  {% if puede('exportar_reportes') %}
+    {# Los botones arrastran los filtros actuales: se descarga lo que se está mirando,
+       no "todo". Un botón de exportar que ignora la búsqueda activa es una trampa. #}
+    <div class="acciones-horizontales">
+      <a class="boton boton--suave" href="{{ url_for('panel.exportar_excel', **argumentos) }}">Exportar a Excel</a>
+      <a class="boton boton--suave" href="{{ url_for('panel.exportar_pdf', **argumentos) }}">Informe en PDF</a>
+    </div>
+  {% endif %}
+</header>
+
+<form class="filtros" id="filtros"
+      hx-get="{{ url_for('tratamientos.buscar') }}"
+      hx-target="#resultados"
+      hx-select="#resultados"
+      hx-swap="outerHTML"
+      hx-trigger="submit, change from:select, change from:input[type=checkbox], change from:input[type=date], keyup changed delay:400ms from:input[type=search]"
+      hx-push-url="true"
+      hx-indicator="#cargando">
+
+  <div class="filtros__fila">
+    <div class="campo campo--ancho">
+      <label for="texto">Buscar</label>
+      <input type="search" id="texto" name="texto" value="{{ filtros.texto }}"
+             placeholder="Número de tratamiento, cliente, target u observación"
+             autocomplete="off">
+    </div>
+
+    <div class="campo campo--ancho">
+      <label for="producto">Producto o activo</label>
+      <input type="search" id="producto" name="producto" value="{{ filtros.producto_texto }}"
+             placeholder="Glifosato, Round Up, Herbicida…" autocomplete="off">
+    </div>
+  </div>
+
+  <div class="filtros__fila">
+    <div class="campo">
+      <label for="cultivo">Cultivo</label>
+      <select id="cultivo" name="cultivo">
+        <option value="">Todos</option>
+        {% for c in opciones.cultivos %}
+          <option value="{{ c }}" {% if filtros.cultivo == c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="campo">
+      <label for="tipo">Tipo de ensayo</label>
+      <select id="tipo" name="tipo">
+        <option value="">Todos</option>
+        {% for t in opciones.tipos %}
+          <option value="{{ t }}" {% if filtros.tipo_tratamiento == t %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="campo">
+      <label for="cliente">Cliente</label>
+      <select id="cliente" name="cliente">
+        <option value="">Todos</option>
+        {% for c in opciones.clientes %}
+          <option value="{{ c.id }}" {% if filtros.cliente_id == c.id %}selected{% endif %}>{{ c.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="campo">
+      <label for="resultado">Resultado</label>
+      <select id="resultado" name="resultado">
+        <option value="">Todos</option>
+        {% for e in opciones.estados_resultado %}
+          <option value="{{ e }}" {% if filtros.estado_resultado == e %}selected{% endif %}>{{ e }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div class="filtros__fila filtros__fila--pie">
+    <div class="campo">
+      <label for="desde">Desde</label>
+      <input type="date" id="desde" name="desde" value="{{ filtros.desde.isoformat() if filtros.desde }}">
+    </div>
+
+    <div class="campo">
+      <label for="hasta">Hasta</label>
+      <input type="date" id="hasta" name="hasta" value="{{ filtros.hasta.isoformat() if filtros.hasta }}">
+    </div>
+
+    <div class="campo">
+      <label for="orden">Ordenar por</label>
+      <select id="orden" name="orden">
+        {% for valor, etiqueta in filtros.ORDENES.items() %}
+          <option value="{{ valor }}" {% if filtros.orden == valor %}selected{% endif %}>{{ etiqueta }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="campo campo--casilla campo--alineado">
+      <input type="checkbox" id="sin_mapear" name="sin_mapear" value="1"
+             {% if filtros.solo_sin_mapear %}checked{% endif %}>
+      <label for="sin_mapear">Solo con productos sin mapear</label>
+    </div>
+
+    <div class="filtros__acciones">
+      <span id="cargando" class="cargando" aria-hidden="true">Buscando…</span>
+      <noscript><button class="boton" type="submit">Buscar</button></noscript>
+      {% if filtros.hay_alguno %}
+        <a class="boton boton--suave" href="{{ url_for('tratamientos.buscar') }}">Limpiar filtros</a>
+      {% endif %}
+    </div>
+  </div>
+</form>
+
+{% include "tratamientos/_resultados.html" %}
+{% endblock %}

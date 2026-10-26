@@ -1,0 +1,51 @@
+<section id="resultados-productos" class="tarjeta">
+  <div class="tarjeta__cabecera">
+    <h2>{{ resultados|length|numero }} producto{{ 's' if resultados|length != 1 }}</h2>
+    <span class="etiqueta">Ordenado por uso en mezclas</span>
+  </div>
+
+  {% if resultados %}
+    <div class="tabla-envoltorio">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th scope="col">Producto</th>
+            <th scope="col">Principio activo</th>
+            <th scope="col">Categoría</th>
+            <th scope="col">Registro</th>
+            <th scope="col" class="num">Usos</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for fila in resultados %}
+          {% set p = fila.producto %}
+          <tr>
+            <td>
+              <a href="{{ url_for('productos.ficha', producto_id=p.id) }}">{{ p.nombre_comercial }}</a>
+              {% if p.estado.value != 'vigente' %} <span class="estado estado--pendiente">discontinuado</span>{% endif %}
+              {% if p.marca %}<small>{{ p.marca }}{% if p.tipo_formulacion %} · {{ p.tipo_formulacion }}{% endif %}</small>{% endif %}
+            </td>
+            <td>{{ p.activo or '—' }}</td>
+            <td>{{ p.categoria or '—' }}</td>
+            <td class="dato">{{ p.numero_registro or '—' }}</td>
+            <td class="num">{{ fila.usos|numero }}</td>
+            <td>
+              {% if fila.usos %}
+                <a class="enlace-accion" href="{{ url_for('tratamientos.buscar', producto_id=p.id) }}">Ver tratamientos →</a>
+              {% else %}
+                <span class="estado estado--pendiente">sin uso</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="vacio">
+      <strong>Ningún producto coincide</strong>
+      Probá con el principio activo en lugar del nombre comercial.
+    </div>
+  {% endif %}
+</section>

@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% set p = ficha.producto %}
+{% block titulo %}{{ p.nombre_comercial }}{% endblock %}
+
+{% block contenido %}
+<nav class="miga" aria-label="Ubicación">
+  <a href="{{ url_for('productos.listar') }}">Productos</a> / {{ p.nombre_comercial }}
+</nav>
+
+<header class="encabezado encabezado--ficha">
+  <div>
+    <span class="etiqueta">Maestro de productos</span>
+    <h1>{{ p.nombre_comercial }}</h1>
+    <p>
+      {{ p.activo or 'Sin principio activo cargado' }}
+      {% if p.categoria %} · {{ p.categoria }}{% endif %}
+      {% if p.marca %} · {{ p.marca }}{% endif %}
+    </p>
+  </div>
+  <div class="acciones-verticales">
+    <span class="estado estado--{{ 'ok' if p.estado.value == 'vigente' else 'pendiente' }} estado--grande">
+      {{ p.estado.value }}
+    </span>
+    {% if puede('administrar_maestro') %}
+      <a class="boton boton--suave" href="{{ url_for('productos.editar', producto_id=p.id) }}">Editar</a>
+    {% endif %}
+  </div>
+</header>
+
+<div class="rejilla rejilla--cuatro">
+  <div class="cifra">
+    <span class="cifra__valor dato">{{ ficha.usos|numero }}</span>
+    <span class="cifra__pie">usos en mezclas</span>
+  </div>
+  <div class="cifra">
+    <span class="cifra__valor dato">{{ ficha.variantes|length|numero }}</span>
+    <span class="cifra__pie">grafías distintas</span>
+  </div>
+  <div class="cifra">
+    <span class="cifra__valor dato">{{ ficha.mapeos|length|numero }}</span>
+    <span class="cifra__pie">reglas de mapeo</span>
+  </div>
+  <div class="cifra">
+    <span class="cifra__valor dato">{{ p.numero_registro or '—' }}</span>
+    <span class="cifra__pie">n° de registro</span>
+  </div>
+</div>
+
+<div class="rejilla rejilla--dos">
+  <section class="tarjeta">
+    <div class="tarjeta__cabecera">
+      <h2>Cómo se lo escribió</h2>
+      <span class="etiqueta">Evidencia del mapeo</span>
+    </div>
+    {% if ficha.variantes %}
+      <table class="tabla">
+        <tbody>
+        {% for nombre, veces in ficha.variantes %}
+          <tr><td>{{ nombre }}</td><td class="num">{{ veces|numero }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <p class="nota">
+        Si alguna de estas grafías no corresponde a este producto, deshacé su decisión
+        desde <a href="{{ url_for('normalizacion.bandeja', pestana='resueltos') }}">Resueltos</a>.
+      </p>
+    {% else %}
+      <div class="vacio">
+        <strong>Todavía no se usó en ninguna mezcla</strong>
+        Va a aparecer acá en cuanto se importe o se cargue un tratamiento que lo incluya.
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="tarjeta">
+    <div class="tarjeta__cabecera">
+      <h2>Últimos tratamientos</h2>
+      {% if ficha.usos %}
+        <a class="enlace-accion" href="{{ url_for('tratamientos.buscar', producto_id=p.id) }}">Ver todos →</a>
+      {% endif %}
+    </div>
+    {% if ficha.tratamientos %}
+      <table class="tabla">
+        <tbody>
+        {% for t in ficha.tratamientos %}
+          <tr>
+            <td><a class="dato" href="{{ url_for('tratamientos.detalle', tratamiento_id=t.id) }}">{{ t.numero_tratamiento }}</a></td>
+            <td>{{ t.cultivo or '—' }}</td>
+            <td class="dato">{{ t.fecha|fecha }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="vacio"><strong>Sin ensayos registrados</strong></div>
+    {% endif %}
+  </section>
+</div>
+
+{% if p.observaciones %}
+  <section class="tarjeta">
+    <div class="tarjeta__cabecera"><h2>Observaciones</h2></div>
+    <p class="observaciones">{{ p.observaciones }}</p>
+  </section>
+{% endif %}
+
+{% if puede('administrar_maestro') %}
+  <section class="tarjeta">
+    <div class="tarjeta__cabecera">
+      <h2>Mantenimiento</h2>
+      <span class="etiqueta">Solo rol técnico</span>
+    </div>
+
+    {% if duplicados %}
+      <p class="nota">
+        Estos productos del maestro se parecen a este. Si son el mismo, fusionalos:
+        los usos y las reglas de mapeo pasan al que quede vigente y el otro se
+        discontinúa con la constancia de a dónde fue. No se borra nada.
+      </p>
+      <table class="tabla">
+        <tbody>
+        {% for otro, parecido in duplicados %}
+          <tr>
+            <td>
+              <a href="{{ url_for('productos.ficha', producto_id=otro.id) }}">{{ otro.nombre_comercial }}</a>
+              <small>{{ otro.activo or '—' }}</small>
+            </td>
+            <td class="num dato">{{ (parecido * 100)|round|int }}%</td>
+            <td>
+              <form method="post" action="{{ url_for('productos.fusionar', producto_id=otro.id) }}">
+                {{ formulario.hidden_tag() }}
+                <input type="hidden" name="destino_id" value="{{ p.id }}">
+                <button class="boton-icono" type="submit">Absorber en este</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="nota">Ningún otro producto del maestro se parece a este.</p>
+    {% endif %}
+
+    <form class="accion-bloque" method="post" action="{{ url_for('productos.estado', producto_id=p.id) }}">
+      {{ formulario.hidden_tag() }}
+      <button class="boton {{ 'boton--peligro' if p.estado.value == 'vigente' else 'boton--suave' }}" type="submit">
+        {{ 'Discontinuar' if p.estado.value == 'vigente' else 'Volver a poner vigente' }}
+      </button>
+      <span class="nota">
+        Un producto discontinuado deja de ofrecerse en las sugerencias, pero sigue
+        explicando los {{ ficha.usos|numero }} ensayo(s) donde ya se usó.
+      </span>
+    </form>
+  </section>
+{% endif %}
+{% endblock %}

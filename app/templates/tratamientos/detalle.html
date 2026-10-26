@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block titulo %}Tratamiento {{ tratamiento.numero_tratamiento }}{% endblock %}
+
+{% block contenido %}
+<nav class="miga">
+  <a href="{{ url_for('tratamientos.buscar') }}">Tratamientos</a>
+  <span aria-hidden="true">/</span>
+  <span class="dato">{{ tratamiento.numero_tratamiento }}</span>
+</nav>
+
+<header class="encabezado encabezado--ficha">
+  <div>
+    <span class="etiqueta">{{ tratamiento.tipo_tratamiento or 'Ensayo' }}</span>
+    <h1 class="dato">{{ tratamiento.numero_tratamiento }}</h1>
+    <p>
+      {{ tratamiento.cultivo or 'Sin cultivo' }}
+      {%- if tratamiento.target %} · {{ tratamiento.target }}{% endif %}
+      {%- if tratamiento.cliente %} · {{ tratamiento.cliente.nombre }}{% endif %}
+    </p>
+  </div>
+  {% if tratamiento.resultado and tratamiento.resultado.porcentaje_efectividad is not none %}
+    <div class="ficha__marcador">
+      <span class="etiqueta">Efectividad</span>
+      <span class="cifra__valor">{{ '%.1f'|format(tratamiento.resultado.porcentaje_efectividad) }}%</span>
+      {% if tratamiento.resultado.estado_resultado %}
+        <span class="cifra__pie">{{ tratamiento.resultado.estado_resultado }}</span>
+      {% endif %}
+    </div>
+  {% endif %}
+</header>
+
+<section class="rejilla rejilla--ficha">
+  <div>
+    {% for mezcla in tratamiento.mezclas %}
+      <div class="tarjeta" style="margin-bottom:1rem">
+        <div class="tarjeta__cabecera">
+          <h2>{{ mezcla.nombre_mezcla or 'Composición de la mezcla' }}</h2>
+          <span class="etiqueta">{{ mezcla.detalles|length }} producto{{ 's' if mezcla.detalles|length != 1 }}</span>
+        </div>
+        {% if mezcla.descripcion %}<p class="nota">{{ mezcla.descripcion }}</p>{% endif %}
+
+        <div class="tabla-envoltorio">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th scope="col" style="width:2.5rem" class="num">#</th>
+                <th scope="col">Producto</th>
+                <th scope="col">Activo</th>
+                <th scope="col" class="num">Dosis</th>
+                <th scope="col">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for d in mezcla.detalles %}
+              <tr>
+                <td class="num dato">{{ d.orden_producto }}</td>
+                <td>
+                  {% if d.producto %}
+                    <a href="{{ url_for('tratamientos.buscar', producto_id=d.producto.id) }}">{{ d.producto.nombre_comercial }}</a>
+                    {% if d.nombre_original != d.producto.nombre_comercial %}
+                      <small>En el Excel: «{{ d.nombre_original }}»</small>
+                    {% endif %}
+                  {% else %}
+                    {{ d.nombre_original }}
+                    <small class="con-aviso">Sin producto del maestro asignado</small>
+                  {% endif %}
+                </td>
+                <td>{{ d.producto.activo if d.producto else '—' }}</td>
+                <td class="num dato">
+                  {% if d.dosis is not none %}{{ '%.2f'|format(d.dosis) }} {{ d.unidad or '' }}{% else %}—{% endif %}
+                </td>
+                <td>
+                  {% set en = d.estado_normalizacion.value %}
+                  <span class="estado estado--{{ 'pendiente' if en == 'pendiente' else 'ok' }}">
+                    {{ {'pendiente':'pendiente','automatica':'automática','confirmada':'confirmada','sin_producto':'sin producto'}[en] }}
+                  </span>
+                </td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% else %}
+      <div class="tarjeta">
+        <div class="vacio">
+          <strong>Este tratamiento no tiene mezcla registrada</strong>
+          Puede haber entrado desde un archivo con la hoja de productos incompleta.
+        </div>
+      </div>
+    {% endfor %}
+
+    {% if tratamiento.observaciones %}
+      <div class="tarjeta" style="margin-bottom:1rem">
+        <div class="tarjeta__cabecera"><h2>Observaciones</h2></div>
+        <p class="nota">{{ tratamiento.observaciones }}</p>
+      </div>
+    {% endif %}
+
+    {% if relacionados %}
+      <div class="tarjeta">
+        <div class="tarjeta__cabecera">
+          <h2>Otros ensayos con estos productos</h2>
+          <span class="etiqueta">Mismo cultivo</span>
+        </div>
+        <div class="tabla-envoltorio">
+          <table class="tabla">
+            <thead>
+              <tr><th scope="col">Tratamiento</th><th scope="col">Fecha</th>
+                  <th scope="col" class="num">Efectividad</th><th scope="col">Resultado</th></tr>
+            </thead>
+            <tbody>
+            {% for r in relacionados %}
+              <tr>
+                <td><a class="dato" href="{{ url_for('tratamientos.detalle', tratamiento_id=r.id) }}">{{ r.numero_tratamiento }}</a></td>
+                <td class="dato">{{ r.fecha|fecha }}</td>
+                <td class="num">
+                  {% if r.resultado and r.resultado.porcentaje_efectividad is not none %}
+                    {{ '%.1f'|format(r.resultado.porcentaje_efectividad) }}%
+                  {% else %}—{% endif %}
+                </td>
+                <td>{{ r.resultado.estado_resultado if r.resultado else '—' }}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <aside>
+    <div class="tarjeta" style="margin-bottom:1rem">
+      <div class="tarjeta__cabecera"><h2>Datos del ensayo</h2></div>
+      <dl class="datos">
+        <dt>Fecha</dt><dd class="dato">{{ tratamiento.fecha|fecha }}</dd>
+        <dt>Cliente</dt><dd>{{ tratamiento.cliente.nombre if tratamiento.cliente else '—' }}</dd>
+        {% if tratamiento.cliente and tratamiento.cliente.ubicacion %}
+          <dt>Ubicación</dt><dd>{{ tratamiento.cliente.ubicacion }}</dd>
+        {% endif %}
+        <dt>Cultivo</dt><dd>{{ tratamiento.cultivo or '—' }}</dd>
+        <dt>Target</dt><dd>{{ tratamiento.target or '—' }}</dd>
+        <dt>Laboratorio</dt><dd>{{ tratamiento.laboratorio or '—' }}</dd>
+      </dl>
+    </div>
+
+    {% if tratamiento.resultado %}
+      {% set r = tratamiento.resultado %}
+      <div class="tarjeta" style="margin-bottom:1rem">
+        <div class="tarjeta__cabecera"><h2>Mediciones</h2></div>
+        <dl class="datos">
+          <dt>pH del agua</dt><dd class="dato">{{ '%.2f'|format(r.ph_agua) if r.ph_agua is not none else '—' }}</dd>
+          <dt>Dureza del agua</dt><dd class="dato">{{ '%.1f'|format(r.dureza_agua) if r.dureza_agua is not none else '—' }}</dd>
+          <dt>pH de la mezcla</dt><dd class="dato">{{ '%.2f'|format(r.ph_mezcla) if r.ph_mezcla is not none else '—' }}</dd>
+          <dt>Suspensibilidad</dt><dd>{{ r.suspensibilidad or '—' }}</dd>
+          <dt>Granulometría</dt><dd>{{ r.granulometria or '—' }}</dd>
+        </dl>
+        {% if r.observacion_cinco_min or r.observacion_diez_min %}
+          <div class="observaciones">
+            {% if r.observacion_cinco_min %}
+              <div><span class="etiqueta">A los 5 minutos</span><p class="nota">{{ r.observacion_cinco_min }}</p></div>
+            {% endif %}
+            {% if r.observacion_diez_min %}
+              <div><span class="etiqueta">A los 10 minutos</span><p class="nota">{{ r.observacion_diez_min }}</p></div>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {% if tratamiento.archivo %}
+      <div class="tarjeta">
+        <div class="tarjeta__cabecera"><h2>Origen del dato</h2></div>
+        <dl class="datos">
+          <dt>Archivo</dt><dd>{{ tratamiento.archivo.nombre_archivo }}</dd>
+          <dt>Importado</dt><dd class="dato">{{ tratamiento.archivo.creado_en|fecha_hora }}</dd>
+          <dt>Cargó</dt><dd>{{ tratamiento.archivo.usuario.nombre }}</dd>
+          <dt>Huella</dt><dd class="dato">{{ tratamiento.archivo.hash_sha256[:16] }}</dd>
+        </dl>
+      </div>
+    {% endif %}
+  </aside>
+</section>
+{% endblock %}

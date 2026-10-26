@@ -1,0 +1,20 @@
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.7
+Flask-Login==0.6.3
+Flask-WTF==1.2.1
+Flask-Limiter==3.8.0
+SQLAlchemy==2.0.34
+WTForms==3.1.2
+email-validator==2.2.0
+argon2-cffi==23.1.0
+python-dotenv==1.0.1
+openpyxl==3.1.5
+# Informes en PDF. Rueda pura de Python: instala en Windows sin librerías de sistema,
+# a diferencia de WeasyPrint, que exige GTK/Pango.
+reportlab==4.4.10
+# Producción
+gunicorn==23.0.0
+psycopg[binary]==3.2.13
+# Desarrollo
+pytest==8.3.2

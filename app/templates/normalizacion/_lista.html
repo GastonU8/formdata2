@@ -1,0 +1,90 @@
+<div id="lista-normalizacion">
+{% if pestana == 'resueltos' %}
+
+  <section class="tarjeta">
+    <div class="tarjeta__cabecera">
+      <h2>{{ resueltos|length|numero }} decisión{{ 'es' if resueltos|length != 1 }} registrada{{ 's' if resueltos|length != 1 }}</h2>
+      <span class="etiqueta">Más recientes primero</span>
+    </div>
+
+    {% if resueltos %}
+      <div class="tabla-envoltorio">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th scope="col">Nombre en la planilla</th>
+              <th scope="col">Se resolvió como</th>
+              <th scope="col" class="num">Filas</th>
+              <th scope="col">Confirmó</th>
+              <th scope="col"></th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for r in resueltos %}
+            <tr>
+              <td>{{ r.mapeo.nombre_original }}<small class="dato">{{ r.mapeo.clave_normalizada }}</small></td>
+              <td>
+                {% if r.mapeo.producto %}
+                  <a href="{{ url_for('productos.ficha', producto_id=r.mapeo.producto.id) }}">{{ r.mapeo.producto.nombre_comercial }}</a>
+                {% else %}
+                  <span class="estado estado--pendiente">no es un producto</span>
+                {% endif %}
+              </td>
+              <td class="num">{{ r.usos|numero }}</td>
+              <td>{{ r.mapeo.confirmado_por.nombre if r.mapeo.confirmado_por else 'Importación' }}</td>
+              <td>
+                <form method="post" action="{{ url_for('normalizacion.deshacer') }}">
+                  {{ formulario.hidden_tag() }}
+                  <input type="hidden" name="clave" value="{{ r.mapeo.clave_normalizada }}">
+                  <button class="boton-icono" type="submit">Deshacer</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="vacio">
+        <strong>Todavía no hay decisiones registradas</strong>
+        Cada nombre que resuelvas en la pestaña «Pendientes» va a aparecer acá.
+      </div>
+    {% endif %}
+  </section>
+
+{% else %}
+
+  {% if pendientes %}
+    <p class="nota">
+      Mostrando {{ pendientes|length }} de {{ total_pendientes|numero }} nombre{{ 's' if total_pendientes != 1 }}
+      sin resolver, empezando por los que más se repiten en el histórico.
+    </p>
+
+    {% for p in pendientes %}
+      {% include "normalizacion/_pendiente.html" %}
+    {% endfor %}
+
+    {% if hay_mas %}
+      <div class="paginacion">
+        <a class="paginacion__item"
+           href="{{ url_for('normalizacion.bandeja', texto=texto, pagina=pagina + 1) }}">Ver más →</a>
+        <span class="paginacion__estado">Página {{ pagina }}</span>
+      </div>
+    {% endif %}
+  {% else %}
+    <section class="tarjeta">
+      <div class="vacio">
+        {% if texto %}
+          <strong>Ningún pendiente coincide con «{{ texto }}»</strong>
+          Probá con menos letras o revisá la pestaña de resueltos.
+        {% else %}
+          <strong>No queda ningún producto sin mapear</strong>
+          Todos los nombres del histórico están asociados a un producto del maestro
+          o marcados como texto que no lo es. Los indicadores están sobre datos completos.
+        {% endif %}
+      </div>
+    </section>
+  {% endif %}
+
+{% endif %}
+</div>

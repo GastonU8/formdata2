@@ -1,0 +1,35 @@
+{# Búsqueda manual en el maestro, dentro de la misma tarjeta del pendiente. #}
+<div class="buscador">
+  <div class="campo campo--ancho">
+    <label for="q-{{ ancla }}">Buscar en el maestro</label>
+    <input type="search" id="q-{{ ancla }}" name="q" value="{{ texto }}"
+           placeholder="nombre comercial, activo o marca" autocomplete="off"
+           hx-get="{{ url_for('normalizacion.buscar') }}"
+           hx-vals='{"clave": {{ clave|tojson }}, "ancla": {{ ancla|tojson }}}'
+           hx-trigger="keyup changed delay:350ms"
+           hx-target="#extra-{{ ancla }}" hx-swap="innerHTML">
+  </div>
+
+  {% if resultados %}
+    <ul class="sugerencias sugerencias--busqueda">
+      {% for producto in resultados %}
+        <li class="sugerencia">
+          <div class="sugerencia__datos">
+            <strong>{{ producto.nombre_comercial }}</strong>
+            <small>{{ producto.activo or '—' }}{% if producto.categoria %} · {{ producto.categoria }}{% endif %}</small>
+          </div>
+          <form method="post" action="{{ url_for('normalizacion.confirmar') }}"
+                hx-post="{{ url_for('normalizacion.confirmar') }}"
+                hx-target="#g-{{ ancla }}" hx-swap="outerHTML">
+            {{ formulario.hidden_tag() }}
+            <input type="hidden" name="clave" value="{{ clave }}">
+            <input type="hidden" name="producto_id" value="{{ producto.id }}">
+            <button class="boton" type="submit">Es este</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% elif texto %}
+    <p class="nota">Ningún producto vigente coincide con «{{ texto }}».</p>
+  {% endif %}
+</div>

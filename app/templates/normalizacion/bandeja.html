@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block titulo %}Sin mapear{% endblock %}
+
+{% block contenido %}
+<header class="encabezado encabezado--ficha">
+  <div>
+    <span class="etiqueta">Carga de datos</span>
+    <h1>Normalización de productos</h1>
+    <p>
+      Cada tarjeta es un nombre escrito en las planillas que todavía no se corresponde
+      con ningún producto del maestro. Resolverlo una vez actualiza todas las filas
+      del histórico donde aparece.
+    </p>
+  </div>
+  {% if puede('administrar_maestro') %}
+    <a class="boton boton--suave" href="{{ url_for('productos.nuevo') }}">Nuevo producto</a>
+  {% endif %}
+</header>
+
+<nav class="pestanas" aria-label="Estado de la normalización">
+  <a class="pestana {% if pestana != 'resueltos' %}pestana--activa{% endif %}"
+     href="{{ url_for('normalizacion.bandeja') }}">
+    Pendientes <span class="pestana__conteo dato">{{ total_pendientes|numero }}</span>
+  </a>
+  <a class="pestana {% if pestana == 'resueltos' %}pestana--activa{% endif %}"
+     href="{{ url_for('normalizacion.bandeja', pestana='resueltos') }}">
+    Resueltos <span class="pestana__conteo dato">{{ total_resueltos|numero }}</span>
+  </a>
+</nav>
+
+<form class="filtros" hx-get="{{ url_for('normalizacion.bandeja') }}"
+      hx-target="#lista-normalizacion" hx-swap="outerHTML"
+      hx-trigger="submit, keyup changed delay:400ms from:input[type=search]"
+      hx-push-url="true" hx-indicator="#cargando">
+  <input type="hidden" name="pestana" value="{{ pestana }}">
+  <input type="hidden" name="fragmento" value="1">
+  <div class="filtros__fila">
+    <div class="campo campo--ancho">
+      <label for="texto">Buscar un nombre</label>
+      <input type="search" id="texto" name="texto" value="{{ texto }}"
+             placeholder="coadyuvante, ciper, s/d…" autocomplete="off">
+    </div>
+    <div class="filtros__acciones">
+      <span id="cargando" class="cargando" aria-hidden="true">Buscando…</span>
+      <noscript><button class="boton" type="submit">Buscar</button></noscript>
+    </div>
+  </div>
+</form>
+
+{% include "normalizacion/_lista.html" %}
+{% endblock %}

@@ -1,0 +1,40 @@
+{# Alta rápida en el maestro sin salir de la bandeja. El nombre viene precargado
+   con la grafía de la planilla: casi siempre solo hay que corregirle el tipeo. #}
+<form class="alta-rapida" method="post" action="{{ url_for('normalizacion.crear_producto') }}"
+      hx-post="{{ url_for('normalizacion.crear_producto') }}"
+      hx-target="#g-{{ ancla }}" hx-swap="outerHTML">
+  {{ formulario.hidden_tag() }}
+  <input type="hidden" name="clave" value="{{ clave }}">
+
+  <div class="filtros__fila">
+    <div class="campo campo--ancho">
+      <label for="nombre-{{ ancla }}">Nombre comercial <span class="requerido">*</span></label>
+      <input type="text" id="nombre-{{ ancla }}" name="nombre_comercial" value="{{ nombre }}" required maxlength="180">
+    </div>
+    <div class="campo">
+      <label for="activo-{{ ancla }}">Principio activo</label>
+      <input type="text" id="activo-{{ ancla }}" name="activo" maxlength="180">
+    </div>
+  </div>
+  <div class="filtros__fila">
+    <div class="campo">
+      <label for="categoria-{{ ancla }}">Categoría</label>
+      <input type="text" id="categoria-{{ ancla }}" name="categoria" maxlength="120" placeholder="Herbicida, Coadyuvante…">
+    </div>
+    <div class="campo">
+      <label for="marca-{{ ancla }}">Marca</label>
+      <input type="text" id="marca-{{ ancla }}" name="marca" maxlength="120">
+    </div>
+    <div class="campo">
+      <label for="registro-{{ ancla }}">N° de registro</label>
+      <input type="text" id="registro-{{ ancla }}" name="numero_registro" maxlength="60">
+    </div>
+    <div class="filtros__acciones">
+      <button class="boton" type="submit">Crear y asociar</button>
+    </div>
+  </div>
+  <p class="nota">
+    Se crea el producto y, en el mismo paso, se le asocian las {{ '' }}filas que hoy
+    tienen este nombre sin resolver.
+  </p>
+</form>

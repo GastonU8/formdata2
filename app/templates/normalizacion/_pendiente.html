@@ -1,0 +1,82 @@
+<article class="sin-mapear" id="g-{{ p.ancla }}">
+  <header class="sin-mapear__cabecera">
+    <div>
+      <span class="etiqueta">Nombre en la planilla</span>
+      <h2 class="sin-mapear__nombre">{{ p.nombre }}</h2>
+      <p class="sin-mapear__meta">
+        <strong class="dato">{{ p.usos|numero }}</strong> fila{{ 's' if p.usos != 1 }} de mezcla
+        {% if p.tratamientos %}
+          · en {{ p.tratamientos|join(', ') }}{% if p.usos > p.tratamientos|length %} y otros{% endif %}
+        {% endif %}
+      </p>
+      {% if p.variantes|length > 1 %}
+        <p class="sin-mapear__variantes">
+          Escrito también como
+          {% for v in p.variantes[1:4] %}<code>{{ v }}</code>{% if not loop.last %} · {% endif %}{% endfor %}
+        </p>
+      {% endif %}
+    </div>
+  </header>
+
+  {% if p.sugerencias %}
+    <ul class="sugerencias">
+      {% for s in p.sugerencias %}
+        <li class="sugerencia sugerencia--{{ s.confianza }}">
+          <div class="sugerencia__datos">
+            <strong>{{ s.producto.nombre_comercial }}</strong>
+            <small>
+              {{ s.producto.activo or 'sin principio activo cargado' }}
+              {% if s.producto.categoria %} · {{ s.producto.categoria }}{% endif %}
+            </small>
+          </div>
+          <div class="sugerencia__medida" title="{{ s.motivo }}">
+            <span class="sugerencia__barra" aria-hidden="true">
+              <span style="width: {{ s.porcentaje }}%"></span>
+            </span>
+            <span class="dato">{{ s.porcentaje }}%</span>
+            <span class="etiqueta">{{ s.confianza }}</span>
+          </div>
+          <form method="post" action="{{ url_for('normalizacion.confirmar') }}"
+                hx-post="{{ url_for('normalizacion.confirmar') }}"
+                hx-target="#g-{{ p.ancla }}" hx-swap="outerHTML">
+            {{ formulario.hidden_tag() }}
+            <input type="hidden" name="clave" value="{{ p.clave }}">
+            <input type="hidden" name="producto_id" value="{{ s.producto.id }}">
+            <button class="boton" type="submit">Es este</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="nota">
+      Ningún producto del maestro se parece lo suficiente. Buscalo a mano o dalo de alta.
+    </p>
+  {% endif %}
+
+  <div class="sin-mapear__pie" id="pie-{{ p.ancla }}">
+    <div class="acciones-horizontales">
+      <button class="boton boton--suave" type="button"
+              hx-get="{{ url_for('normalizacion.buscar', clave=p.clave, ancla=p.ancla) }}"
+              hx-target="#extra-{{ p.ancla }}" hx-swap="innerHTML">
+        Buscar otro producto
+      </button>
+
+      {% if puede('administrar_maestro') %}
+        <button class="boton boton--suave" type="button"
+                hx-get="{{ url_for('normalizacion.alta', clave=p.clave, ancla=p.ancla, nombre=p.nombre) }}"
+                hx-target="#extra-{{ p.ancla }}" hx-swap="innerHTML">
+          Darlo de alta en el maestro
+        </button>
+      {% endif %}
+
+      <form method="post" action="{{ url_for('normalizacion.descartar') }}"
+            hx-post="{{ url_for('normalizacion.descartar') }}"
+            hx-target="#g-{{ p.ancla }}" hx-swap="outerHTML">
+        {{ formulario.hidden_tag() }}
+        <input type="hidden" name="clave" value="{{ p.clave }}">
+        <button class="boton-icono" type="submit">No es un producto</button>
+      </form>
+    </div>
+    <div id="extra-{{ p.ancla }}" class="sin-mapear__extra"></div>
+  </div>
+</article>

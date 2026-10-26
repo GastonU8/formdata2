@@ -1,0 +1,25 @@
+{# Reemplaza en el lugar a la tarjeta del pendiente una vez tomada la decisión.
+   Se queda en pantalla (no desaparece) para que la persona vea qué hizo y pueda
+   deshacerlo sin buscarlo en otra pestaña. #}
+<article class="sin-mapear sin-mapear--resuelto" id="g-{{ resultado.ancla }}">
+  <div class="sin-mapear__cabecera">
+    <div>
+      <span class="etiqueta">{{ 'Resuelto' if resultado.producto else 'Descartado' }}</span>
+      <h2 class="sin-mapear__nombre">
+        {% if resultado.producto %}
+          {{ resultado.producto.nombre_comercial }}
+        {% else %}
+          No es un producto
+        {% endif %}
+      </h2>
+      <p class="sin-mapear__meta">{{ mensaje }}</p>
+    </div>
+    <form method="post" action="{{ url_for('normalizacion.deshacer') }}"
+          hx-post="{{ url_for('normalizacion.deshacer') }}"
+          hx-target="closest article" hx-swap="outerHTML">
+      {{ formulario.hidden_tag() }}
+      <input type="hidden" name="clave" value="{{ resultado.clave }}">
+      <button class="boton-icono" type="submit">Deshacer</button>
+    </form>
+  </div>
+</article>

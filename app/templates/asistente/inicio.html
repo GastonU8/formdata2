@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block titulo %}Asistente{% endblock %}
+
+{% block contenido %}
+<header class="encabezado">
+  <span class="etiqueta">Consulta asistida</span>
+  <h1>Preguntá sobre los ensayos</h1>
+  <p>
+    Responde solo con datos del sistema y muestra de dónde los sacó. No opina sobre
+    aplicación ni recomienda mezclas: eso lo decide el técnico.
+  </p>
+</header>
+
+{% if modo != 'anthropic' %}
+  <div class="aviso aviso--aviso" role="status">
+    <strong>Modo sin modelo de lenguaje.</strong>
+    No hay un modelo configurado, así que las preguntas se enrutan por palabras clave
+    a las mismas herramientas y los datos que devuelve son igual de reales. Para
+    activar el modelo, cargá <code>FORMDATA_IA_PROVEEDOR</code> y
+    <code>FORMDATA_IA_API_KEY</code> en el <code>.env</code>.
+  </div>
+{% endif %}
+
+<form class="tarjeta preguntar" method="post" action="{{ url_for('asistente.preguntar') }}"
+      hx-post="{{ url_for('asistente.preguntar') }}"
+      hx-target="#respuesta" hx-swap="outerHTML" hx-indicator="#pensando"
+      hx-disabled-elt="find button">
+  {{ formulario.hidden_tag() }}
+  <div class="campo campo--ancho">
+    <label for="pregunta">Tu pregunta</label>
+    <input type="text" id="pregunta" name="pregunta" maxlength="500" required
+           autocomplete="off" value="{{ pregunta|default('', true) }}"
+           placeholder="¿Cuántos ensayos de soja dieron precipitado?">
+  </div>
+  <div class="acciones-horizontales">
+    <button class="boton" type="submit">Preguntar</button>
+    <span id="pensando" class="cargando" aria-hidden="true">Consultando el sistema…</span>
+  </div>
+
+</form>
+
+{# Las sugerencias van FUERA del formulario. Dentro, al compartir el nombre
+   «pregunta» con el campo de texto, se enviaban las dos y ganaba el campo: el chip
+   repetía la consulta anterior. Como enlaces con `hx-post`, con JavaScript
+   preguntan en el acto y sin JavaScript navegan y dejan la pregunta escrita en el
+   campo, listo para enviar. #}
+<ul class="sugerencias-rapidas">
+  {% for s in sugerencias %}
+    <li>
+      <a class="chip" href="{{ url_for('asistente.inicio', pregunta=s) }}"
+         hx-post="{{ url_for('asistente.preguntar') }}"
+         hx-vals='{"pregunta": {{ s|tojson }}, "csrf_token": {{ csrf_token()|tojson }}}'
+         hx-target="#respuesta" hx-swap="outerHTML" hx-indicator="#pensando">{{ s }}</a>
+    </li>
+  {% endfor %}
+</ul>
+
+{% if respuesta is defined %}
+  {% include "asistente/_respuesta.html" %}
+{% else %}
+  <article id="respuesta" class="tarjeta">
+    <div class="vacio">
+      <strong>Todavía no preguntaste nada</strong>
+      Probá con una de las sugerencias de arriba, o escribí una pregunta sobre
+      cultivos, productos, mediciones o un número de tratamiento.
+    </div>
+  </article>
+{% endif %}
+
+{% if historial %}
+  <section class="tarjeta">
+    <div class="tarjeta__cabecera">
+      <h2>Tus consultas anteriores</h2>
+      <span class="etiqueta">Quedan registradas</span>
+    </div>
+    <table class="tabla">
+      <tbody>
+      {% for c in historial %}
+        <tr>
+          <td><a href="{{ url_for('asistente.ver', consulta_id=c.id) }}">{{ c.pregunta }}</a></td>
+          <td>
+            <span class="estado estado--{{ 'ok' if c.estado.value == 'generada' else ('error' if c.estado.value == 'error' else 'pendiente') }}">
+              {{ c.estado.value.replace('_', ' ') }}
+            </span>
+          </td>
+          <td class="dato num">{{ c.creado_en|fecha_hora }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+{% endif %}
+{% endblock %}

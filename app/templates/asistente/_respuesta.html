@@ -1,0 +1,67 @@
+{# La respuesta y, al mismo nivel de importancia, de dónde salió.
+
+   Las fuentes no son un pie de página decorativo: son la única manera de que
+   alguien pueda apoyar una decisión técnica en esto. Por eso van visibles y con
+   enlace, no escondidas detrás de un desplegable. #}
+<article class="respuesta respuesta--{{ respuesta.estado.value }}" id="respuesta">
+  <header class="respuesta__cabecera">
+    <span class="etiqueta">Preguntaste</span>
+    <p class="respuesta__pregunta">{{ pregunta }}</p>
+  </header>
+
+  {% if not respuesta.confiable %}
+    <div class="aviso aviso--{{ 'error' if respuesta.estado.value == 'error' else 'aviso' }}" role="status">
+      {% if respuesta.estado.value == 'requiere_revision' %}
+        Revisá esta respuesta antes de usarla.
+      {% elif respuesta.estado.value == 'sin_contexto' %}
+        El sistema no tiene datos para responder esto.
+      {% else %}
+        No se pudo completar la consulta.
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="respuesta__texto">{{ respuesta.texto }}</div>
+
+  {% if respuesta.advertencias %}
+    <ul class="respuesta__advertencias">
+      {% for a in respuesta.advertencias %}<li>{{ a }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+
+  {% if respuesta.fuentes %}
+    <div class="fuentes">
+      <span class="etiqueta">De dónde sale</span>
+      <ul class="fuentes__lista">
+        {% for f in respuesta.fuentes %}
+          <li class="fuente fuente--{{ f.tipo }}">
+            {% if f.url %}
+              <a href="{{ f.url }}">{{ f.etiqueta }}</a>
+            {% else %}{{ f.etiqueta }}{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  {% if respuesta.herramientas_usadas %}
+    <details class="respuesta__traza">
+      <summary>Qué consultó el asistente</summary>
+      <table class="tabla">
+        <tbody>
+        {% for h in respuesta.herramientas_usadas %}
+          <tr>
+            <td class="dato">{{ h.herramienta }}</td>
+            <td><small>{{ h.argumentos|default({}, true) }}</small></td>
+            <td class="num">{% if h.error %}<span class="estado estado--error">rechazada</span>{% else %}{{ h.filas }} bloque(s){% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <p class="nota">
+        El asistente no escribe consultas: elige de una lista fija de herramientas
+        que ya estaban programadas y revisadas. {{ respuesta.latencia_ms }} ms.
+      </p>
+    </details>
+  {% endif %}
+</article>

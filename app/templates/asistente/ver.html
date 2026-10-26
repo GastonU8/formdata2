@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block titulo %}Consulta #{{ consulta.id }}{% endblock %}
+
+{% block contenido %}
+<nav class="miga" aria-label="Ubicación">
+  <a href="{{ url_for('asistente.inicio') }}">Asistente</a> / consulta #{{ consulta.id }}
+</nav>
+
+<header class="encabezado">
+  <span class="etiqueta">{{ consulta.creado_en|fecha_hora }}</span>
+  <h1>{{ consulta.pregunta }}</h1>
+  <p>
+    Se muestra lo que se respondió entonces, con las fuentes de ese momento. Los datos
+    del sistema pueden haber cambiado desde entonces.
+  </p>
+</header>
+
+<article class="respuesta respuesta--{{ consulta.estado.value }}">
+  <div class="respuesta__texto">{{ consulta.respuesta }}</div>
+
+  {% if consulta.fuentes %}
+    <div class="fuentes">
+      <span class="etiqueta">De dónde salió</span>
+      <ul class="fuentes__lista">
+        {% for f in consulta.fuentes %}
+          <li class="fuente fuente--{{ f.tipo }}">
+            {% if f.url %}<a href="{{ f.url }}">{{ f.etiqueta }}</a>{% else %}{{ f.etiqueta }}{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <details class="respuesta__traza">
+    <summary>Qué consultó y con qué</summary>
+    <table class="tabla">
+      <tbody>
+        <tr><td>Proveedor</td><td class="dato">{{ consulta.proveedor }} · {{ consulta.modelo }}</td></tr>
+        <tr><td>Estado</td><td class="dato">{{ consulta.estado.value }}</td></tr>
+        <tr><td>Latencia</td><td class="dato">{{ consulta.latencia_ms }} ms</td></tr>
+        {% if consulta.tokens_entrada %}
+          <tr><td>Tokens</td><td class="dato">{{ consulta.tokens_entrada }} entrada / {{ consulta.tokens_salida }} salida</td></tr>
+        {% endif %}
+        {% for h in consulta.herramientas_usadas or [] %}
+          <tr><td>Herramienta</td><td class="dato">{{ h.herramienta }} {{ h.argumentos|default({}, true) }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </details>
+</article>
+{% endblock %}
